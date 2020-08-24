@@ -6,7 +6,6 @@ if [ ! -d "venv" ]; then
     pip install django
     pip install djangogrpcframework
     pip install djangorestframework
-    pip install grpci
     pip install grpcio
     pip install grpcio-tools
 fi
