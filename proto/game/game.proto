@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package game;
+
+service GameCoordinatorController {
+    rpc Create(CreateGameRequest) returns (CreateGameResponse) {}
+}
+
+message CreateGameRequest {
+    string token = 1;
+}
+
+message CreateGameResponse {
+    string id = 1;
+}
