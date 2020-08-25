@@ -1,5 +1,6 @@
 # created by virtualenv automatically
- 
+.vscode/
+
 venv/
 db.sqlite3
 
