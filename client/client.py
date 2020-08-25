@@ -7,17 +7,6 @@ import threading
 from proto.game import game_pb2
 from proto.game import game_pb2_grpc
 
-def getlist(token=None):
-    with grpc.insecure_channel('localhost:50051') as channel:
-        stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
-        return stub.List(game_pb2.ListGameRequest(token=token))
-
-def create(token=None):
-    with grpc.insecure_channel('localhost:50051') as channel:
-        stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
-        return stub.Create(game_pb2.CreateGameRequest(token=token))
-
-
 class PlayerClient(object):
   def __init__(self):
     self.stop_event         = threading.Event()
@@ -61,26 +50,64 @@ class PlayerClient(object):
     with self.request_condition:
       self.request_condition.notify()
 
-  def make_request(self, request):
-    self.add_request(request)
-    with self.response_condition:
-      while True:
-        self.response_condition.wait()
-        if request in self.responses:
-          return self.responses[request.id]
+class GameState(object):
 
-def play(token=None, gameid=None):
-    with grpc.insecure_channel('localhost:50051') as channel:
-        stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
-        player_client = PlayerClient()
-        player_client.add_request(game_pb2.PlayGameRequest(id = 1, token=token, action='move'))
-        count = 1
-        for response in stub.Play(player_client):
-            # print(response)
-            player_client.add_response(response)
-            if response.action == 'end':
-                break
-            else:
-                count = count + 1
-                player_client.add_request(game_pb2.PlayGameRequest(id = count, token=token, action='move'))
-        return player_client.responses
+    def __init__(self):
+        self._history = []
+
+    def save_action_in_history(self, action):
+        return self._history.append(action)
+
+    def history(self):
+        return self._history
+
+    def available_actions(self):
+        return [ 'continue', 'end' ]
+
+class Client(object):
+
+    def __init__(self, token=None):
+        if token is None:
+            raise Exception('Empty token has been provided')
+        self.token = token
+
+    def getlist(self):
+        with grpc.insecure_channel('localhost:50051') as channel:
+            stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
+            return stub.List(game_pb2.ListGameRequest(token=self.token))
+
+    def create(self):
+        with grpc.insecure_channel('localhost:50051') as channel:
+            stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
+            return stub.Create(game_pb2.CreateGameRequest(token=self.token))
+
+    def play(self, gameid=None, agent=None):
+        if gameid is None:
+            raise Exception('Empty gameid has been provided')
+        if agent is None:
+            raise Exception('Empty agent has been provided')
+
+        with grpc.insecure_channel('localhost:50051') as channel:
+            stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
+            player_client = PlayerClient()
+            game_state    = GameState()
+
+            initial_action = 'continue'
+            
+            player_client.add_request(game_pb2.PlayGameRequest(id = 1, token=self.token, action=initial_action))
+
+            count = 1
+            for response in stub.Play(player_client):
+                print('Response from server: ', count, response.action)
+                player_client.add_response(response)
+                game_state.save_action_in_history(response.action)
+                if response.action == 'end':
+                    break
+                else:
+                    count = count + 1
+                    next_action = agent.make_action(game_state)
+                    player_client.add_request(game_pb2.PlayGameRequest(id = count, token=self.token, action=next_action))
+            
+            agent.end(game_state)
+            player_client.close()
+            return player_client.responses

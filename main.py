@@ -1,4 +1,4 @@
-from client.client import create, getlist, play
+from client.client import Client
 
 import argparse
 
@@ -12,14 +12,34 @@ parser.add_argument('--create', action='store_true', help='Create a new game', d
 # foo()
 args = parser.parse_args()
 
+class MyPokerAgent(object):
+
+    def __init__(self):
+        self.moves_count = 0
+
+    def make_action(self, state):
+        history           = state.history()
+        available_actions = state.available_actions()
+        # card = state.get_current_card()
+        print('Moves history', history)
+        print('Available actions', available_actions)
+        if self.moves_count == 3:
+            return 'end'
+        self.moves_count = self.moves_count + 1
+        return 'continue'
+
+    def end(self, state):
+        print('Moves history after the end: ', state.history())
+
 if args.token is not None:
     token = args.token
+    client = Client(token)
     if args.play:
-        print(play(token, args.play))
+        client.play(args.play, MyPokerAgent())
     elif args.list:
-        print(getlist(token))
+        print(client.getlist())
     elif args.create:
-        print(create(token))
+        print(client.create())
     else:
         parser.print_help()
 else:
