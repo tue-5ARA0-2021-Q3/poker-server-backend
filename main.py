@@ -37,7 +37,7 @@ if args.token is not None:
     if args.play:
         client.play(args.play, MyPokerAgent())
     elif args.list:
-        print(client.getlist())
+        print(client.get_list())
     elif args.create:
         print(client.create())
     else:

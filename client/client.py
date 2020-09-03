@@ -71,7 +71,7 @@ class Client(object):
             raise Exception('Empty token has been provided')
         self.token = token
 
-    def getlist(self):
+    def get_list(self):
         with grpc.insecure_channel('localhost:50051') as channel:
             stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
             return stub.List(game_pb2.ListGameRequest(token=self.token))
@@ -91,22 +91,26 @@ class Client(object):
             stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
             player_client = PlayerClient()
             game_state    = GameState()
+            metadata      = [ 
+              ('token', str(self.token)), 
+              ('gameid', str(gameid))
+            ]
 
             initial_action = 'continue'
             
-            player_client.add_request(game_pb2.PlayGameRequest(id = 1, token=self.token, action=initial_action))
+            player_client.add_request(game_pb2.PlayGameRequest(id = 1, action=initial_action))
 
             count = 1
-            for response in stub.Play(player_client):
+            for response in stub.Play(player_client, metadata=metadata):
                 print('Response from server: ', count, response.action)
                 player_client.add_response(response)
                 game_state.save_action_in_history(response.action)
-                if response.action == 'end':
+                if response.action.startswith('end'):
                     break
                 else:
                     count = count + 1
                     next_action = agent.make_action(game_state)
-                    player_client.add_request(game_pb2.PlayGameRequest(id = count, token=self.token, action=next_action))
+                    player_client.add_request(game_pb2.PlayGameRequest(id = count, action=next_action))
             
             agent.end(game_state)
             player_client.close()

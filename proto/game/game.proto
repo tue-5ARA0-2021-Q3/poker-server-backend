@@ -26,8 +26,7 @@ message ListGameResponse {
 
 message PlayGameRequest {
     int32 id = 1;
-    string token = 2;
-    string action = 3;
+    string action = 2;
 }
 
 message PlayGameResponse {
