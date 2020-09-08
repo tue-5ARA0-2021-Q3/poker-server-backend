@@ -50,6 +50,8 @@ class KuhnPokerGameInstance(object):
         self.check_game_status()
         # We need to lock game instance state here to check player's registration states
         with self._lock:
+            if self.player1.get_id() == player_id or self.player2.get_id() == player_id:
+                raise Exception('Invalid registration: there is a player with the same id in the game')
             if self.player1.is_registered() is False:
                 self.player1.register(player_id)
                 self.__log(f'Primary player ({ player_id }) has been registered')
@@ -57,7 +59,7 @@ class KuhnPokerGameInstance(object):
                 self.player2.register(player_id)
                 self.__log(f'Secondary player ({ player_id }) has been registered')
             else:
-                raise Exception('Invalid registration: there are two connected players in the game already')
+                raise Exception('Invalid registration: there are two connected players in the game')
 
     def wait_for_all_players(self):
         self.check_game_status()

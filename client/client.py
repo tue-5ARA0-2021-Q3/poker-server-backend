@@ -3,6 +3,7 @@ import time
 import random
 import collections
 import threading
+import sys
 
 from client.state import GameState
 from client.events import ClientRequestEventsIterator
@@ -34,6 +35,7 @@ class Client(object):
             raise Exception('Empty agent has been provided')
 
         with grpc.insecure_channel('localhost:50051') as channel:
+          try:
             stub      = game_pb2_grpc.GameCoordinatorControllerStub(channel)
             requests  = ClientRequestEventsIterator()
             state     = GameState()
@@ -61,3 +63,8 @@ class Client(object):
             agent.end(state)
             requests.close()
             return state.history()
+          except:
+            print(f'Unexpected error: {sys.exc_info()[0]}')
+            raise
+            
+            

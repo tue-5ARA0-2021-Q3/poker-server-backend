@@ -5,6 +5,7 @@ class ConnectionStatus(object):
     def __init__(self):
         self._is_connected    = threading.Event()
         self._is_disconnected = threading.Event()
+        self._is_busy_event   = threading.Event()
         self._is_busy         = threading.Condition()
     
     def wait_for_connection(self):
@@ -14,11 +15,14 @@ class ConnectionStatus(object):
     def wait_if_busy(self):
         self.check_status()
         with self._is_busy:
+            self._is_busy_event.set()
             self._is_busy.wait()
+        self._is_busy_event.clear()
         self.check_status()
 
     def notify_all(self):
         self.check_status()
+        self._is_busy_event.wait()
         with self._is_busy:
             self._is_busy.notify_all()
 

@@ -28,6 +28,11 @@ class GameCoordinatorService(Service):
         token  = metadata['token']
         gameid = metadata['gameid']
 
+        game_db = Game.objects.get(id = gameid)
+        
+        if game_db.is_finished:
+            raise Exception('Game is finished')
+
         with GameCoordinatorService.games_lock:
             game_instances = list(filter(lambda game: game.gameid == gameid, GameCoordinatorService.games))
             if len(game_instances) == 0:
@@ -65,5 +70,6 @@ class GameCoordinatorService(Service):
             if action == 'end':
                 break
 
+        Game.objects.update(id = gameid, is_finished = True)
         instance.finish_game()
             
