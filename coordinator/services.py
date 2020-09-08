@@ -3,6 +3,8 @@ import time
 import threading
 
 from coordinator.games.kuhn_poker import KuhnPokerGameInstance
+from coordinator.games.kuhn_game import KuhnRootChanceGameState
+from coordinator.games.kuhn_constants import CARDS_DEALINGS
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, GameTypes
 from proto.game import game_pb2
@@ -48,28 +50,38 @@ class GameCoordinatorService(Service):
         for message in request:
             # Some code for actions
             action = message.action
-            if action == 'connection':
-                yield game_pb2.PlayGameResponse(action = 'connected')
 
-            time.sleep(0.1)
-
-            if action == 'continue':
+            if action == 'start':
                 if instance.is_primary_player(token):
-                    # do somethinf
-                    yield game_pb2.PlayGameResponse(action = str(action))
-                    instance.notify_opponent(token)
-                    instance.wait_for_opponent(token)
+                    instance.root  = KuhnRootChanceGameState(CARDS_DEALINGS)
+                    instance.stage = instance.root
+                    instance.stage = instance.stage.play(CARDS_DEALINGS[1])
+                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
                 elif instance.is_secondary_player(token):
-                    # do something here
                     instance.wait_for_opponent(token)
-                    yield game_pb2.PlayGameResponse(action = str(action))
-                    instance.notify_opponent(token)
-                else:
-                    raise Exception(f'Unknown player with token { token }')
-
-            if action == 'end':
+                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
+            elif action == 'end':
                 break
+            else:
+                instance.stage = instance.stage.play(action)
+                instance.notify_opponent(token)
+                instance.wait_for_opponent(token)
+                if not instance.stage.is_terminal():
+                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
+                else:
+                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = [ 'end' ])
+                    instance.notify_opponent(token)
 
-        Game.objects.update(id = gameid, is_finished = True)
-        instance.finish_game()
+        # time.sleep(1.0)
+
+        if instance.is_opponent_waiting(token):
+            instance.notify_opponent(token)
             
+        # Game.objects.update(id = gameid, is_finished = True)
+        instance.finish_game()
+
+        with GameCoordinatorService.games_lock:
+            try:
+                GameCoordinatorService.games.remove(instance)
+            except:
+                return

@@ -5,11 +5,20 @@ from datetime import datetime
 
 from coordinator.helpers.connection import ConnectionStatus
 
+CHECK = 'check'
+CALL = 'call'
+FOLD = 'fold'
+BET = 'bet'
+
 class KuhnPokerPlayerInstance(object):
+    initial_bank = 10
     
     def __init__(self):
         self.id     = None
         self.status = ConnectionStatus()
+        self.bank   = KuhnPokerPlayerInstance.initial_bank
+        # private fields
+        self._lock = threading.Lock()
 
     def is_registered(self):
         return self.id is not None
@@ -24,14 +33,13 @@ class KuhnPokerPlayerInstance(object):
     def get_status(self):
         return self.status
 
-class KuhnPokerGameStage(object):
+    def set_current_bank(self, bank):
+        with self._lock:
+            self.bank = bank
 
-    def __init__(self, id):
-        self.stage_id       = id
-        self.player_actions = []
-    
-    def save_player_action(self, playerid, action):
-        self.player_actions.append({ id: playerid, action: action })
+    def get_current_bank(self):
+        with self._lock:
+            return self.bank
 
 class KuhnPokerGameInstance(object):
 
@@ -39,7 +47,8 @@ class KuhnPokerGameInstance(object):
         self.gameid  = gameid
         self.player1 = KuhnPokerPlayerInstance()
         self.player2 = KuhnPokerPlayerInstance()
-        self.stages  = []
+        self.root    = None
+        self.stage   = None
         ## Private fields
         self._counter   = 0
         self._lock      = threading.Lock()
@@ -68,14 +77,6 @@ class KuhnPokerGameInstance(object):
         self.get_secondary_player().get_status().wait_for_connection()
         self.__log('Both primary and secondary players have been connected to a game instance')
 
-    def initiate_new_stage(self):
-        self.check_game_status()
-        with self._lock:
-            self._counter = self._counter + 1
-            new_stage = KuhnPokerGameStage(self._counter)
-            self.stages.append(new_stage)
-            return new_stage
-
     def get_primary_player(self):
         return self.player1
 
@@ -98,6 +99,15 @@ class KuhnPokerGameInstance(object):
             self.get_primary_player().get_status().wait_if_busy()
         else:
             raise Exception(f'Invalid \'player_id\' argument ({ player_id }) passed to a wait_for_opponent() method of Kuhn poker game instance')
+
+    def is_opponent_waiting(self, player_id):
+        # self.check_game_status()
+        if self.is_primary_player(player_id):
+            return self.get_secondary_player().get_status().is_busy()
+        elif self.is_secondary_player(player_id):
+            return self.get_primary_player().get_status().is_busy()
+        else: 
+            raise Exception(f'Invalid \'player_id\' argument ({ player_id }) passed to a is_opponent_waiting() method of Kuhn poker game instance')
 
     def notify_opponent(self, player_id):
         self.check_game_status()

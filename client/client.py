@@ -35,36 +35,31 @@ class Client(object):
             raise Exception('Empty agent has been provided')
 
         with grpc.insecure_channel('localhost:50051') as channel:
-          try:
-            stub      = game_pb2_grpc.GameCoordinatorControllerStub(channel)
-            requests  = ClientRequestEventsIterator()
-            state     = GameState()
-            metadata  = [ 
-              ('token', str(self.token)), 
-              ('gameid', str(gameid))
-            ]
-            
-            requests.set_initial_request(game_pb2.PlayGameRequest(action = 'connection'))
+          stub      = game_pb2_grpc.GameCoordinatorControllerStub(channel)
+          requests  = ClientRequestEventsIterator()
+          state     = GameState()
+          metadata  = [ 
+            ('token', str(self.token)), 
+            ('gameid', str(gameid))
+          ]
+          
+          requests.set_initial_request(game_pb2.PlayGameRequest(action = 'start'))
 
-            count = 1
-            for response in stub.Play(requests, metadata=metadata):
-                print('Response from server: ', count, response.action)
+          for response in stub.Play(requests, metadata=metadata):
+              print('Response from server: ', response.action)
+              state.save_action_in_history(response.action)
+              if response.action.startswith('end'):
+                  break
+              else:
+                  # next_action = agent.make_action(state)
+                  print('Available actions: ', response.available_actions)
+                  next_action = random.choice(response.available_actions)
+                  requests.make_request(game_pb2.PlayGameRequest(action = next_action))
 
-                state.save_action_in_history(response.action)
-                if response.action.startswith('end'):
-                    break
-                else:
-                    count = count + 1
-                    next_action = agent.make_action(state)
-                    requests.make_request(game_pb2.PlayGameRequest(action = next_action))
-
-            requests.make_request(game_pb2.PlayGameRequest(action = 'end'))
-            
-            agent.end(state)
-            requests.close()
-            return state.history()
-          except:
-            print(f'Unexpected error: {sys.exc_info()[0]}')
-            raise
+          requests.make_request(game_pb2.PlayGameRequest(action = 'end'))
+          
+          agent.end(state)
+          requests.close()
+          return state.history()
             
             

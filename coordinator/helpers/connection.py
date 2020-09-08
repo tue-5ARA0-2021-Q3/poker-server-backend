@@ -22,7 +22,7 @@ class ConnectionStatus(object):
 
     def notify_all(self):
         self.check_status()
-        self._is_busy_event.wait()
+        # self._is_busy_event.wait()
         with self._is_busy:
             self._is_busy.notify_all()
 
@@ -37,6 +37,9 @@ class ConnectionStatus(object):
 
     def set_disconnected(self):
         self._is_disconnected.set()
+
+    def is_busy(self):
+        return self._is_busy_event.is_set()
 
     def check_status(self):
         if not self.is_connected() or self.is_disconnected():

@@ -30,4 +30,5 @@ message PlayGameRequest {
 
 message PlayGameResponse {
     string action = 1;
+    repeated string available_actions = 2;
 }
