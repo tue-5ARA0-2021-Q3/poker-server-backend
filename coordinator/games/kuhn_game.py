@@ -57,8 +57,8 @@ class KuhnPlayerMoveGameState(GameStateBase):
             ) for a in self.actions
         }
 
-        public_card = self.cards[0] if self.to_move == A else self.cards[1]
-        self._information_set = ".{0}.{1}".format(public_card, ".".join(self.actions_history))
+        # public_card = self.cards[0] if self.to_move == A else self.cards[1]
+        self._information_set = ".{0}.{1}".format(self.cards, ".".join(self.actions_history))
 
     def __get_actions_in_next_round(self, a):
         if len(self.actions_history) == 0 and a == BET:

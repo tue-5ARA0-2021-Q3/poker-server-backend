@@ -1,6 +1,7 @@
 import grpc
 import time
 import threading
+import random
 
 from coordinator.games.kuhn_poker import KuhnPokerGameInstance
 from coordinator.games.kuhn_game import KuhnRootChanceGameState
@@ -55,7 +56,7 @@ class GameCoordinatorService(Service):
                 if instance.is_primary_player(token):
                     instance.root  = KuhnRootChanceGameState(CARDS_DEALINGS)
                     instance.stage = instance.root
-                    instance.stage = instance.stage.play(CARDS_DEALINGS[1])
+                    instance.stage = instance.stage.play(random.choice(CARDS_DEALINGS))
                     yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
                 elif instance.is_secondary_player(token):
                     instance.wait_for_opponent(token)
@@ -78,6 +79,9 @@ class GameCoordinatorService(Service):
             instance.notify_opponent(token)
             
         # Game.objects.update(id = gameid, is_finished = True)
+        if instance.is_primary_player(token):
+            print('Game result: ' + instance.stage.inf_set())
+            print('Money: ' + str(instance.stage.evaluation()))
         instance.finish_game()
 
         with GameCoordinatorService.games_lock:
