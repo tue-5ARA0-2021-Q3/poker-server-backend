@@ -25,11 +25,9 @@ message ListGameResponse {
 }
 
 message PlayGameRequest {
-    int32 id = 1;
-    string action = 2;
+    string action = 1;
 }
 
 message PlayGameResponse {
-    int32 id = 1;
-    string action = 2;
+    string action = 1;
 }

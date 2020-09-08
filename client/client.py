@@ -4,65 +4,11 @@ import random
 import collections
 import threading
 
+from client.state import GameState
+from client.events import ClientRequestEventsIterator
+
 from proto.game import game_pb2
 from proto.game import game_pb2_grpc
-
-class PlayerClient(object):
-  def __init__(self):
-    self.stop_event         = threading.Event()
-    self.request_condition  = threading.Condition()
-    self.response_condition = threading.Condition()
-    self.requests           = collections.deque()
-    self.last_request       = None
-    self.expected_responses = collections.deque()
-    self.responses = {}
-
-  def _next(self):
-    with self.request_condition:
-      while not self.requests and not self.stop_event.is_set():
-        self.request_condition.wait()
-      if len(self.requests) > 0:
-        return self.requests.popleft()
-      else:
-        raise StopIteration()
-
-  def next(self):
-    return self._next()
-
-  def __next__(self):
-    return self._next()
-
-  def add_response(self, response):
-    with self.response_condition:
-      request = self.expected_responses.popleft()
-      self.responses[request.id] = response
-      self.response_condition.notify_all()
-
-  def add_request(self, request):
-    with self.request_condition:
-      self.requests.append(request)
-      with self.response_condition:
-        self.expected_responses.append(request)
-      self.request_condition.notify()
-
-  def close(self):
-    self.stop_event.set()
-    with self.request_condition:
-      self.request_condition.notify()
-
-class GameState(object):
-
-    def __init__(self):
-        self._history = []
-
-    def save_action_in_history(self, action):
-        return self._history.append(action)
-
-    def history(self):
-        return self._history
-
-    def available_actions(self):
-        return [ 'continue', 'end' ]
 
 class Client(object):
 
@@ -88,30 +34,30 @@ class Client(object):
             raise Exception('Empty agent has been provided')
 
         with grpc.insecure_channel('localhost:50051') as channel:
-            stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
-            player_client = PlayerClient()
-            game_state    = GameState()
-            metadata      = [ 
+            stub      = game_pb2_grpc.GameCoordinatorControllerStub(channel)
+            requests  = ClientRequestEventsIterator()
+            state     = GameState()
+            metadata  = [ 
               ('token', str(self.token)), 
               ('gameid', str(gameid))
             ]
-
-            initial_action = 'continue'
             
-            player_client.add_request(game_pb2.PlayGameRequest(id = 1, action=initial_action))
+            requests.set_initial_request(game_pb2.PlayGameRequest(action = 'connection'))
 
             count = 1
-            for response in stub.Play(player_client, metadata=metadata):
+            for response in stub.Play(requests, metadata=metadata):
                 print('Response from server: ', count, response.action)
-                player_client.add_response(response)
-                game_state.save_action_in_history(response.action)
+
+                state.save_action_in_history(response.action)
                 if response.action.startswith('end'):
                     break
                 else:
                     count = count + 1
-                    next_action = agent.make_action(game_state)
-                    player_client.add_request(game_pb2.PlayGameRequest(id = count, action=next_action))
+                    next_action = agent.make_action(state)
+                    requests.make_request(game_pb2.PlayGameRequest(action = next_action))
+
+            requests.make_request(game_pb2.PlayGameRequest(action = 'end'))
             
-            agent.end(game_state)
-            player_client.close()
-            return player_client.responses
+            agent.end(state)
+            requests.close()
+            return state.history()

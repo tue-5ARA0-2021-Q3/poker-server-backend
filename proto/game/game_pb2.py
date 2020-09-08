@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"\"\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"-\n\x0fPlayGameRequest\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t\".\n\x10PlayGameResponse\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0e\n\x06\x61\x63tion\x18\x02 \x01(\t2\xd0\x01\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"\"\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"\"\n\x10PlayGameResponse\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t2\xd0\x01\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
 )
 
 
@@ -162,15 +162,8 @@ _PLAYGAMEREQUEST = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='game.PlayGameRequest.id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='action', full_name='game.PlayGameRequest.action', index=1,
-      number=2, type=9, cpp_type=9, label=1,
+      name='action', full_name='game.PlayGameRequest.action', index=0,
+      number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -188,7 +181,7 @@ _PLAYGAMEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=173,
-  serialized_end=218,
+  serialized_end=206,
 )
 
 
@@ -201,15 +194,8 @@ _PLAYGAMERESPONSE = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='id', full_name='game.PlayGameResponse.id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
-    _descriptor.FieldDescriptor(
-      name='action', full_name='game.PlayGameResponse.action', index=1,
-      number=2, type=9, cpp_type=9, label=1,
+      name='action', full_name='game.PlayGameResponse.action', index=0,
+      number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -226,8 +212,8 @@ _PLAYGAMERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=220,
-  serialized_end=266,
+  serialized_start=208,
+  serialized_end=242,
 )
 
 DESCRIPTOR.message_types_by_name['CreateGameRequest'] = _CREATEGAMEREQUEST
@@ -289,8 +275,8 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=269,
-  serialized_end=477,
+  serialized_start=245,
+  serialized_end=453,
   methods=[
   _descriptor.MethodDescriptor(
     name='Create',
