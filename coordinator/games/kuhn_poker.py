@@ -109,16 +109,34 @@ class KuhnPokerGameInstance(object):
         else: 
             raise Exception(f'Invalid \'player_id\' argument ({ player_id }) passed to a is_opponent_waiting() method of Kuhn poker game instance')
 
-    def notify_opponent(self, player_id):
+    def notify_opponent(self, player_id, sync = False):
         self.check_game_status()
         if self.is_primary_player(player_id):
             self.__log('Primary player tries to notify their opponent of his decision')
-            self.get_primary_player().get_status().notify_all()
+            self.get_primary_player().get_status().notify_all(sync = sync)
         elif self.is_secondary_player(player_id):
             self.__log('Secondary player tries to notify their opponent of his decision')
-            self.get_secondary_player().get_status().notify_all()
+            self.get_secondary_player().get_status().notify_all(sync = sync)
         else:
             raise Exception(f'Invalid \'player_id\' argument ({ player_id }) passed to a notify_opponent() method of Kuhn poker game instance')
+
+    def update_players_bank(self):
+        self.player1.set_current_bank(self.player1.get_current_bank() + self.stage.evaluation())
+        self.player2.set_current_bank(self.player2.get_current_bank() - self.stage.evaluation())
+
+    def game_result(self, player_id):
+        if self.is_primary_player(player_id):
+            if self.player1.get_current_bank() > self.player1.get_current_bank():
+                return 'win'
+            else:
+                return 'defeat'
+        elif self.is_secondary_player(player_id):
+            if self.player1.get_current_bank() > self.player1.get_current_bank():
+                return 'defeat'
+            else:
+                return 'win'
+        else:
+           raise Exception(f'Invalid \'player_id\' argument ({ player_id }) passed to a game_result() method of Kuhn poker game instance') 
 
     def finish_game(self):
         self._game_over.set()

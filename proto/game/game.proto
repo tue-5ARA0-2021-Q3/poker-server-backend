@@ -29,6 +29,6 @@ message PlayGameRequest {
 }
 
 message PlayGameResponse {
-    string action = 1;
+    string state = 1;
     repeated string available_actions = 2;
 }

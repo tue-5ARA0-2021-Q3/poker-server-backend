@@ -1,6 +1,7 @@
 from client.client import Client
 
 import argparse
+import random
 
 parser = argparse.ArgumentParser(description='Poker client CLI')
 
@@ -18,15 +19,9 @@ class MyPokerAgent(object):
         self.moves_count = 0
 
     def make_action(self, state):
-        history           = state.history()
+        # history           = state.history()
         available_actions = state.available_actions()
-        # card = state.get_current_card()
-        print('Moves history', history)
-        print('Available actions', available_actions)
-        if self.moves_count == 3:
-            return 'end'
-        self.moves_count = self.moves_count + 1
-        return 'continue'
+        return random.choice(available_actions)
 
     def end(self, state):
         print('Moves history after the end: ', state.history())

@@ -20,9 +20,10 @@ class ConnectionStatus(object):
         self._is_busy_event.clear()
         self.check_status()
 
-    def notify_all(self):
+    def notify_all(self, sync = False):
         self.check_status()
-        # self._is_busy_event.wait()
+        if sync is True:
+            self._is_busy_event.wait()
         with self._is_busy:
             self._is_busy.notify_all()
 

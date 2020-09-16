@@ -57,10 +57,22 @@ class GameCoordinatorService(Service):
                     instance.root  = KuhnRootChanceGameState(CARDS_DEALINGS)
                     instance.stage = instance.root
                     instance.stage = instance.stage.play(random.choice(CARDS_DEALINGS))
-                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
+                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.stage.actions)
                 elif instance.is_secondary_player(token):
                     instance.wait_for_opponent(token)
-                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
+                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.stage.actions)
+            elif action == 'results':
+                if instance.is_primary_player(token):
+                    instance.update_players_bank()
+                    instance.wait_for_opponent(token)
+                elif instance.is_secondary_player(token):
+                    instance.notify_opponent(token, sync = True)
+
+                if instance.player1.get_current_bank() > 0 and instance.player2.get_current_bank() > 0:
+                    yield game_pb2.PlayGameResponse(state = 'Next Game', available_actions = [ 'start' ])
+                else:
+                    yield game_pb2.PlayGameResponse(state = instance.game_result(token), available_actions = [ 'end' ])
+                
             elif action == 'end':
                 break
             else:
@@ -68,10 +80,11 @@ class GameCoordinatorService(Service):
                 instance.notify_opponent(token)
                 instance.wait_for_opponent(token)
                 if not instance.stage.is_terminal():
-                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = instance.stage.actions)
+                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.stage.actions)
                 else:
-                    yield game_pb2.PlayGameResponse(action = 'continue', available_actions = [ 'end' ])
                     instance.notify_opponent(token)
+                    yield game_pb2.PlayGameResponse(state = instance.stage.inf_set(), available_actions = [ 'results' ])
+                        
 
         # time.sleep(1.0)
 
