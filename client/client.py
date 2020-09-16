@@ -43,20 +43,18 @@ class Client(object):
             ('gameid', str(gameid))
           ]
           
-          requests.set_initial_request(game_pb2.PlayGameRequest(action = 'start'))
+          requests.set_initial_request(game_pb2.PlayGameRequest(action = 'START'))
 
           for response in stub.Play(requests, metadata=metadata):
-              print('State from server: ', response.state)
               state.save_action_in_history(response.state)
               state.set_available_actions(response.available_actions)
-              if response.state.startswith('end'):
+              if response.state.startswith('END'):
                   break
               else:
                   next_action = agent.make_action(state)
-                  print('Sending a request: ', next_action)
                   requests.make_request(game_pb2.PlayGameRequest(action = next_action))
 
-          requests.make_request(game_pb2.PlayGameRequest(action = 'end'))
+          requests.make_request(game_pb2.PlayGameRequest(action = 'END'))
           
           agent.end(state)
           requests.close()

@@ -5,7 +5,7 @@ import random
 
 from coordinator.games.kuhn_poker import KuhnPokerGameInstance
 from coordinator.games.kuhn_game import KuhnRootChanceGameState
-from coordinator.games.kuhn_constants import CARDS_DEALINGS
+from coordinator.games.kuhn_constants import CARDS_DEALINGS, NEXT
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, GameTypes
 from proto.game import game_pb2
@@ -52,16 +52,16 @@ class GameCoordinatorService(Service):
             # Some code for actions
             action = message.action
 
-            if action == 'start':
+            if instance.is_restart_action(action):
                 if instance.is_primary_player(token):
                     instance.root  = KuhnRootChanceGameState(CARDS_DEALINGS)
                     instance.stage = instance.root
                     instance.stage = instance.stage.play(random.choice(CARDS_DEALINGS))
-                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.stage.actions)
+                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.get_available_actions())
                 elif instance.is_secondary_player(token):
                     instance.wait_for_opponent(token)
-                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.stage.actions)
-            elif action == 'results':
+                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.get_available_actions())
+            elif instance.is_results_action(action):
                 if instance.is_primary_player(token):
                     instance.update_players_bank()
                     instance.wait_for_opponent(token)
@@ -69,21 +69,21 @@ class GameCoordinatorService(Service):
                     instance.notify_opponent(token, sync = True)
 
                 if instance.player1.get_current_bank() > 0 and instance.player2.get_current_bank() > 0:
-                    yield game_pb2.PlayGameResponse(state = 'Next Game', available_actions = [ 'start' ])
+                    yield game_pb2.PlayGameResponse(state = NEXT, available_actions = instance.get_restart_actions())
                 else:
-                    yield game_pb2.PlayGameResponse(state = instance.game_result(token), available_actions = [ 'end' ])
+                    yield game_pb2.PlayGameResponse(state = instance.game_result(token), available_actions = instance.get_end_actions())
                 
-            elif action == 'end':
+            elif instance.is_end_action(action):
                 break
             else:
                 instance.stage = instance.stage.play(action)
                 instance.notify_opponent(token)
                 instance.wait_for_opponent(token)
                 if not instance.stage.is_terminal():
-                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.stage.actions)
+                    yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(), available_actions = instance.get_available_actions())
                 else:
                     instance.notify_opponent(token)
-                    yield game_pb2.PlayGameResponse(state = instance.stage.inf_set(), available_actions = [ 'results' ])
+                    yield game_pb2.PlayGameResponse(state = instance.stage.inf_set(), available_actions = instance.get_results_actions())
                         
 
         # time.sleep(1.0)

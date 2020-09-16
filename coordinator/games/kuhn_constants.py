@@ -7,6 +7,9 @@ CHECK = "CHECK"
 CALL = "CALL"
 FOLD = "FOLD"
 BET = "BET"
+NEXT = "NEXT"
+WIN = "WIN"
+DEFEAT = "DEFEAT"
 
 
 RESULTS_MAP = {}

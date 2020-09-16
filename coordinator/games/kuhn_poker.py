@@ -3,12 +3,8 @@ import threading
 
 from datetime import datetime
 
+from coordinator.games.kuhn_constants import *
 from coordinator.helpers.connection import ConnectionStatus
-
-CHECK = 'check'
-CALL = 'call'
-FOLD = 'fold'
-BET = 'bet'
 
 class KuhnPokerPlayerInstance(object):
     initial_bank = 10
@@ -127,16 +123,37 @@ class KuhnPokerGameInstance(object):
     def game_result(self, player_id):
         if self.is_primary_player(player_id):
             if self.player1.get_current_bank() > self.player1.get_current_bank():
-                return 'win'
+                return WIN
             else:
-                return 'defeat'
+                return DEFEAT
         elif self.is_secondary_player(player_id):
             if self.player1.get_current_bank() > self.player1.get_current_bank():
-                return 'defeat'
+                return DEFEAT
             else:
-                return 'win'
+                return WIN
         else:
            raise Exception(f'Invalid \'player_id\' argument ({ player_id }) passed to a game_result() method of Kuhn poker game instance') 
+
+    def get_available_actions(self):
+        return self.stage.actions
+
+    def get_restart_actions(self):
+        return [ 'START' ]
+
+    def is_restart_action(self, action):
+        return action == 'START'
+
+    def get_results_actions(self):
+        return [ 'RESULTS' ]
+
+    def is_results_action(self, action):
+        return action == 'RESULTS'
+
+    def get_end_actions(self):
+        return [ 'END' ]
+
+    def is_end_action(self, action):
+        return action == 'END'
 
     def finish_game(self):
         self._game_over.set()
