@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"\"\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"<\n\x10PlayGameResponse\x12\r\n\x05state\x18\x01 \x01(\t\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t2\xd0\x01\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"\"\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"<\n\x10PlayGameResponse\x12\r\n\x05state\x18\x01 \x01(\t\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t2\x93\x02\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x41\n\x0c\x46indOrCreate\x12\x17.game.CreateGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
 )
 
 
@@ -283,7 +283,7 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
   serialized_start=271,
-  serialized_end=479,
+  serialized_end=546,
   methods=[
   _descriptor.MethodDescriptor(
     name='Create',
@@ -296,9 +296,19 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
+    name='FindOrCreate',
+    full_name='game.GameCoordinatorController.FindOrCreate',
+    index=1,
+    containing_service=None,
+    input_type=_CREATEGAMEREQUEST,
+    output_type=_LISTGAMERESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
     name='List',
     full_name='game.GameCoordinatorController.List',
-    index=1,
+    index=2,
     containing_service=None,
     input_type=_LISTGAMEREQUEST,
     output_type=_LISTGAMERESPONSE,
@@ -308,7 +318,7 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Play',
     full_name='game.GameCoordinatorController.Play',
-    index=2,
+    index=3,
     containing_service=None,
     input_type=_PLAYGAMEREQUEST,
     output_type=_PLAYGAMERESPONSE,

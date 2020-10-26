@@ -4,6 +4,7 @@ package game;
 
 service GameCoordinatorController {
     rpc Create(CreateGameRequest) returns (CreateGameResponse) {}
+    rpc FindOrCreate(CreateGameRequest) returns (ListGameResponse) {}
     rpc List(ListGameRequest) returns (ListGameResponse) {}
     rpc Play(stream PlayGameRequest) returns (stream PlayGameResponse) {}
 }

@@ -19,6 +19,11 @@ class GameCoordinatorControllerStub(object):
                 request_serializer=proto_dot_game_dot_game__pb2.CreateGameRequest.SerializeToString,
                 response_deserializer=proto_dot_game_dot_game__pb2.CreateGameResponse.FromString,
                 )
+        self.FindOrCreate = channel.unary_unary(
+                '/game.GameCoordinatorController/FindOrCreate',
+                request_serializer=proto_dot_game_dot_game__pb2.CreateGameRequest.SerializeToString,
+                response_deserializer=proto_dot_game_dot_game__pb2.ListGameResponse.FromString,
+                )
         self.List = channel.unary_unary(
                 '/game.GameCoordinatorController/List',
                 request_serializer=proto_dot_game_dot_game__pb2.ListGameRequest.SerializeToString,
@@ -35,6 +40,12 @@ class GameCoordinatorControllerServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Create(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def FindOrCreate(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -59,6 +70,11 @@ def add_GameCoordinatorControllerServicer_to_server(servicer, server):
                     servicer.Create,
                     request_deserializer=proto_dot_game_dot_game__pb2.CreateGameRequest.FromString,
                     response_serializer=proto_dot_game_dot_game__pb2.CreateGameResponse.SerializeToString,
+            ),
+            'FindOrCreate': grpc.unary_unary_rpc_method_handler(
+                    servicer.FindOrCreate,
+                    request_deserializer=proto_dot_game_dot_game__pb2.CreateGameRequest.FromString,
+                    response_serializer=proto_dot_game_dot_game__pb2.ListGameResponse.SerializeToString,
             ),
             'List': grpc.unary_unary_rpc_method_handler(
                     servicer.List,
@@ -94,6 +110,23 @@ class GameCoordinatorController(object):
         return grpc.experimental.unary_unary(request, target, '/game.GameCoordinatorController/Create',
             proto_dot_game_dot_game__pb2.CreateGameRequest.SerializeToString,
             proto_dot_game_dot_game__pb2.CreateGameResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def FindOrCreate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/game.GameCoordinatorController/FindOrCreate',
+            proto_dot_game_dot_game__pb2.CreateGameRequest.SerializeToString,
+            proto_dot_game_dot_game__pb2.ListGameResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

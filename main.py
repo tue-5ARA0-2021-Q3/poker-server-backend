@@ -6,7 +6,7 @@ import random
 parser = argparse.ArgumentParser(description='Poker client CLI')
 
 parser.add_argument('--token', help='Player\'s token')
-parser.add_argument('--play', help='Player\'s token')
+parser.add_argument('--play', help='Existing game id or \'random\' for random match')
 parser.add_argument('--list', action='store_true', help='Get player\'s list of games', default=False)
 parser.add_argument('--create', action='store_true', help='Create a new game', default=False)
 
