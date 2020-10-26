@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
-    </head>
-    <body>
-        <div class="ui container" style="margin-top: 2em;">
-            {% include "navbar.html" %}
-            {% block content %}
-            Replace block content
-            {% endblock content %}
-        </div>
-    </body>
+<head>
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+</head>
+<body>
+<div class="ui container" style="margin-top: 2em;">
+    {% include "navbar.html" %}
+    {% block content %}
+        Replace block content
+    {% endblock content %}
+</div>
+</body>
 </html>

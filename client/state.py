@@ -1,9 +1,8 @@
-
 class GameState(object):
 
     def __init__(self):
-        self._history           = []
-        self._available_actions = [ 'continue', 'end' ]
+        self._history = []
+        self._available_actions = ['continue', 'end']
 
     def save_action_in_history(self, action):
         return self._history.append(action)

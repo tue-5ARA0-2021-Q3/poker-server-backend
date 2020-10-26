@@ -13,6 +13,7 @@ parser.add_argument('--create', action='store_true', help='Create a new game', d
 # foo()
 args = parser.parse_args()
 
+
 class MyPokerAgent(object):
 
     def __init__(self):
@@ -25,6 +26,7 @@ class MyPokerAgent(object):
 
     def end(self, state):
         print('Moves history after the end: ', state.history())
+
 
 if args.token is not None:
     token = args.token
