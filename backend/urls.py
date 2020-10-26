@@ -16,12 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from pages.views import home_view, about_view
+from pages.views import home_view, game_view, about_view
 
 from coordinator.handlers import game_coordinator_handlers
 
 urlpatterns = [
     path('home/', home_view, name='home'),
+    path('game/', game_view, name='game'),
+    path('game/<str:game_id>/', game_view, name='game'),
     path('about/', about_view, name='about'),
     path('admin/', admin.site.urls),
 ]

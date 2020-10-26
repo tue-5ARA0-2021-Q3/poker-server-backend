@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="ui raised segments">
+        <h3 class="ui top attached header">Game results {% if is_game_found %} : <span style="font-weight: normal">{{ game.id }}</span> {% endif %} </h3>
+
+        {% if is_game_id_provided is False %}
+
+            <div class="ui attached segment teal padded">
+                <div class="ui input fluid focus">
+                    <input type="text" placeholder="Enter game UUID">
+                </div>
+            </div>
+            <div class="ui attached secondary segment">
+                <div class="ui button">Search</div>
+            </div>
+
+        {% elif not is_game_found %}
+
+            <div class="ui placeholder segment">
+                <div class="ui icon header">
+                    <i class="exclamation triangle icon"></i>
+                    <div class="content">
+                        There is no game with provided UUID
+                        <div class="sub header">Please double check that you have entered game UUID correctly</div>
+                    </div>
+
+                </div>
+                <div class="inline">
+                    <a class="ui button" href="/game" rel="noopener">Go back</a>
+                </div>
+            </div>
+
+        {% else %}
+
+            <div class="ui attached segment teal">
+                Created by: {{ game.created_by }}
+            </div>
+
+        {% endif %}
+
+    </div>
+
+{% endblock content %}
