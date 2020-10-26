@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib import admin
 from enum import IntEnum
 import uuid
 
@@ -17,7 +18,7 @@ class GameTypes(IntEnum):
 
     @classmethod
     def choices(cls):
-        return [(key.value, key.name) for key in cls]
+        return [ (key.value, key.name) for key in cls ]
 
 
 class Game(models.Model):
@@ -30,4 +31,17 @@ class Game(models.Model):
     created_at = models.DateTimeField(auto_now_add = True)
     player_1 = models.UUIDField(null = True)
     player_2 = models.UUIDField(null = True)
+    outcome = models.TextField(default = '')
+    winner_id = models.UUIDField(null = True)
     game_type = models.IntegerField(choices = GameTypes.choices(), null = False)
+
+
+class GameAdmin(admin.ModelAdmin):
+    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'created_at', 'player_1', 'player_2',
+                    'winner_id', 'game_type')
+    readonly_fields = ('is_started', 'is_finished', 'is_failed',
+                       'error', 'created_by', 'created_at', 'player_1', 'player_2', 'outcome',
+                       'winner_id', 'game_type')
+
+    class Meta:
+        model = Game

@@ -1,5 +1,6 @@
 import grpc
 import time
+import sys
 import threading
 import random
 
@@ -29,19 +30,18 @@ class GameCoordinatorService(Service):
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def FindOrCreate(self, request, context):
         player = Player.objects.get(token = request.token)
-        with GameCoordinatorService.games_lock:
-            game_candidates = Game.objects.filter(game_type = GameTypes.PLAYER_PLAYER, is_started = False,
-                                                  is_failed = False, is_finished = False)
-            if len(game_candidates) == 0:
-                new_game = Game(created_by = player.token, game_type = GameTypes.PLAYER_PLAYER)
-                instance = GameCoordinatorService.create_game_instance(new_game.id)
-                if instance is not None:
-                    new_game.save()
-                    return game_pb2.ListGameResponse(game_ids = [ new_game.id ])
-                else:
-                    raise Exception(f'Failed to create a game instance: {new_game.id}')
+        game_candidates = Game.objects.filter(game_type = GameTypes.PLAYER_PLAYER, is_started = False,
+                                              is_failed = False, is_finished = False)
+        if len(game_candidates) == 0:
+            new_game = Game(created_by = player.token, game_type = GameTypes.PLAYER_PLAYER)
+            instance = GameCoordinatorService.create_game_instance(new_game.id)
+            if instance is not None:
+                new_game.save()
+                return game_pb2.ListGameResponse(game_ids = [ str(new_game.id) ])
             else:
-                return game_pb2.ListGameResponse(game_ids = list(map(lambda candidate: str(candidate.id), game_candidates)))
+                raise Exception(f'Failed to create a game instance: {new_game.id}')
+        else:
+            return game_pb2.ListGameResponse(game_ids = list(map(lambda candidate: str(candidate.id), game_candidates)))
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def List(self, request, context):
@@ -53,17 +53,23 @@ class GameCoordinatorService(Service):
     def Play(self, request, context):
         metadata = dict(context.invocation_metadata())
         token = metadata[ 'token' ]
-        gameid = metadata[ 'gameid' ]
+        game_id = metadata[ 'game_id' ]
 
-        game_db = Game.objects.get(id = gameid)
+        game_db = Game.objects.get(id = game_id)
 
         if game_db.is_finished:
             raise Exception('Game is finished')
 
-        instance = GameCoordinatorService.create_game_instance(gameid)
+        instance = GameCoordinatorService.create_game_instance(game_id)
 
         instance.register_player(token)
         instance.wait_for_all_players()
+
+        if instance.is_primary_player(token):
+            game_db.player_1 = instance.get_primary_player().get_id()
+            game_db.player_2 = instance.get_secondary_player().get_id()
+            game_db.is_started = True
+            game_db.save(update_fields = [ 'player_1', 'player_2', 'is_started' ])
 
         for message in request:
             # Some code for actions
@@ -103,6 +109,7 @@ class GameCoordinatorService(Service):
                     yield game_pb2.PlayGameResponse(state = instance.stage.secret_inf_set(),
                                                     available_actions = instance.get_available_actions())
                 else:
+                    instance.save_outcome()
                     instance.notify_opponent(token)
                     yield game_pb2.PlayGameResponse(state = instance.stage.inf_set(),
                                                     available_actions = instance.get_results_actions())
@@ -112,18 +119,20 @@ class GameCoordinatorService(Service):
         if instance.is_opponent_waiting(token):
             instance.notify_opponent(token)
 
-        # Game.objects.update(id = gameid, is_finished = True)
+        # Game.objects.update(id = game_id, is_finished = True)
         if instance.is_primary_player(token):
-            print('Game result: ' + instance.stage.inf_set())
-            print('Money: ' + str(instance.stage.evaluation()))
-
-        instance.finish_game()
-
-        with GameCoordinatorService.games_lock:
-            try:
-                GameCoordinatorService.games.remove(instance)
-            except:
-                return
+            with GameCoordinatorService.games_lock:
+                try:
+                    instance.finish_game()
+                    game_db = Game.objects.get(id = game_id)
+                    game_db.is_finished = True
+                    game_db.winner_id = instance.get_winner_id()
+                    game_db.outcome = instance.get_outcomes()
+                    game_db.save(update_fields = [ 'is_finished', 'winner_id', 'outcome' ])
+                    GameCoordinatorService.games.remove(instance)
+                except:
+                    print("Unexpected error:", sys.exc_info()[ 0 ])
+                    return
 
     @staticmethod
     def create_game_instance(game_id):

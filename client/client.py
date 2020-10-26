@@ -44,7 +44,7 @@ class Client(object):
 
             metadata = [
                 ('token', str(self.token)),
-                ('gameid', str(game_id))
+                ('game_id', str(game_id))
             ]
 
             requests.set_initial_request(game_pb2.PlayGameRequest(action = 'START'))
