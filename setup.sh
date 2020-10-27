@@ -8,6 +8,7 @@ if [ ! -d "venv" ]; then
     pip install djangorestframework
     pip install grpcio
     pip install grpcio-tools
+    pip install django-mathfilters
 fi
 
 source venv/bin/activate

@@ -1,13 +1,17 @@
 {% extends "base.html" %}
 
+{% load static %}
+{% load mathfilters %}
+
 {% block content %}
 
     <div class="ui raised segments">
-        <h3 class="ui top attached header">Game results {% if is_game_found %} : <span style="font-weight: normal">{{ game.id }}</span> {% endif %} </h3>
+        <h3 class="ui top attached header">Game results {% if is_game_found %} :
+            <span style="font-weight: normal">{{ game.id }}</span> {% endif %} </h3>
 
         {% if is_game_id_provided is False %}
 
-            <div class="ui attached segment teal padded">
+            <div class="ui attached segment blue padded">
                 <div class="ui input fluid focus">
                     <input type="text" placeholder="Enter game UUID">
                 </div>
@@ -34,9 +38,100 @@
 
         {% else %}
 
-            <div class="ui attached segment teal">
-                Created by: {{ game.created_by }}
+            <div class="ui attached segment blue">
+                <table class="ui fixed single line celled table">
+                    <thead>
+                    <tr>
+                        <th>Created by</th>
+                        <th>Created at</th>
+                        <th>Player 1</th>
+                        <th>Player 2</th>
+                        <th>Winner</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>{{ game.created_by }}</td>
+                        <td>{{ game.created_at }}</td>
+                        <td>{{ game.player_1 }}</td>
+                        <td>{{ game.player_2 }}</td>
+                        <td>{{ game.winner_id }}</td>
+                    </tr>
+                    </tbody>
+                </table>
             </div>
+            {% for event in events %}
+                <div class="ui attached segment blue">
+                    <div class="ui feed">
+                        <div class="event">
+                            <div class="label">
+                                <img src="{% static "avatars/player_1_default.png" %}">
+                            </div>
+                            <div class="content">
+                                <div class="summary">
+                                    <a class="user">
+                                        Player 1
+                                    </a> gets {{ event.player_1_card }} card and <a class="user"> Player 2 </a>
+                                    gets {{ event.player_2_card }} card.
+                                </div>
+                                <div class="meta">
+                                    <a class="like">
+                                        <i class="like icon"></i> 4 Likes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% for action in event.actions %}
+                            <div class="event">
+                                <div class="label">
+                                    <img src="{% static "avatars/player_2_default.png" %}">
+                                </div>
+                                <div class="content">
+                                    <div class="summary">
+                                        <a class="user">
+                                            Someone
+                                        </a> decided to {{ action }}.
+                                    </div>
+                                    <div class="meta">
+                                        <a class="like">
+                                            <i class="like icon"></i> 4 Likes
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="event">
+                            <div class="label">
+                                <img src="{% static "avatars/player_2_default.png" %}">
+                            </div>
+                            <div class="content">
+                                <div class="summary">
+                                    <a class="user">
+                                        Player 1
+                                    </a> {% if event.result > 0 %}
+                                    wins
+                                {% else %}
+                                    loses
+                                {% endif %}
+                                    {{ event.result|abs }} point(s) and <a class="user">
+                                    Player 2
+                                </a> {% if event.result < 0 %}
+                                    wins
+                                {% else %}
+                                    loses
+                                {% endif %}
+                                    {{ event.result|abs }} point(s).
+                                </div>
+                                <div class="meta">
+                                    <a class="like">
+                                        <i class="like icon"></i> 4 Likes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
 
         {% endif %}
 
