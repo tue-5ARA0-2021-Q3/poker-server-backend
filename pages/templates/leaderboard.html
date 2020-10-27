@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="ui raised segments">
+        <h3 class="ui top attached header">Leaderboard</h3>
+        <div class="ui blue padded segment">
+            <table class="ui very basic table">
+                <thead>
+                <tr>
+                    <th>Player's Token</th>
+                    <th>Games Won</th>
+                    <th>Games Lost</th>
+                    <th>Games Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for player in leaderboard %}
+                    <tr>
+                        <td>{{ player.player_token }}</td>
+                        <td>{{ player.games_won }}</td>
+                        <td>{{ player.games_lost }}</td>
+                        <td>{{ player.games_total }}</td>
+                    </tr>
+                {% endfor %}
+                
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+{% endblock content %}

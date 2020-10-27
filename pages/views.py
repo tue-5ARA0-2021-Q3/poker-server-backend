@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from coordinator.models import Game
+from coordinator.models import Game, Player
+from django.db.models import Q
 
 
 # Create your views here.
@@ -40,6 +41,25 @@ def game_view(request, *args, **kwargs):
             options['is_game_found'] = False
 
     return render(request, "game.html", options)
+
+
+def leaderboard_view(request, *args, **kwargs):
+    leaderboard = []
+
+    for player in Player.objects.all():
+        games = Game.objects.filter(Q(player_1 = player.token) | Q(player_2 = player.token))
+        games_won = len(list(filter(lambda game: game.winner_id == player.token, games)))
+        games_lost = len(games) - games_won
+        leaderboard.append({
+            'player_token': player.token,
+            'games_total': len(games),
+            'games_won': games_won,
+            'games_lost': games_lost
+        })
+
+    return render(request, "leaderboard.html", {
+        'leaderboard': leaderboard
+    })
 
 
 def about_view(request, *args, **kwargs):

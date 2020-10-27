@@ -127,12 +127,12 @@ class KuhnPokerGameInstance(object):
 
     def game_result(self, player_id):
         if self.is_primary_player(player_id):
-            if self.player1.get_current_bank() > self.player1.get_current_bank():
+            if self.player1.get_current_bank() > self.player2.get_current_bank():
                 return WIN
             else:
                 return DEFEAT
         elif self.is_secondary_player(player_id):
-            if self.player1.get_current_bank() > self.player1.get_current_bank():
+            if self.player1.get_current_bank() > self.player2.get_current_bank():
                 return DEFEAT
             else:
                 return WIN
