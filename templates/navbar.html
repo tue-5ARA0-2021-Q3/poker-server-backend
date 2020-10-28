@@ -1,16 +1,9 @@
-<div class="ui raising segment">
-    <div class="ui secondary pointing menu">
-        <a class="item" href="{% url 'home' %}">
-            Home
-        </a>
-        <a class="item" href="{% url 'games' %}">
-            Games
-        </a>
-        <a class="item" href="{% url 'leaderboard' %}">
-            Leaderboard
-        </a>
-        <a class="item" href="{% url 'about' %}">
-            About
-        </a>
+{% with request.resolver_match.url_name as url_name %}
+    <div class="ui four item menu">
+        <a class="item {% if url_name == 'home' %} active {% endif %}" href="{% url 'home' %}">Home</a>
+        <a class="item {% if url_name == 'games' %} active {% endif %}" href="{% url 'games' %}">Games</a>
+        <a class="item {% if url_name == 'leaderboard' %} active {% endif %}"
+           href="{% url 'leaderboard' %}">Leaderboard</a>
+        <a class="item {% if url_name == 'about' %} active {% endif %}" href="{% url 'about' %}">About</a>
     </div>
-</div>
+{% endwith %}
