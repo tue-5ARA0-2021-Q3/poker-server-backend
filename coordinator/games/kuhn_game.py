@@ -1,6 +1,7 @@
 from coordinator.games.kuhn_constants import CHECK, BET, CALL, FOLD, A, CHANCE, RESULTS_MAP
 import random
 
+
 class GameStateBase:
 
     def __init__(self, parent, to_move, actions):
@@ -9,7 +10,8 @@ class GameStateBase:
         self.actions = actions
 
     def play(self, action):
-        return self.children[action] # pylint: disable=no-member
+        # noinspection PyUnresolvedReferences
+        return self.children[action]  # pylint: disable=no-member
 
     def is_chance(self):
         return self.to_move == CHANCE
@@ -17,17 +19,19 @@ class GameStateBase:
     def inf_set(self):
         raise NotImplementedError("Please implement information_set method")
 
+
 class KuhnRootChanceGameState(GameStateBase):
 
     def __init__(self, actions):
         super().__init__(parent = None, to_move = CHANCE, actions = actions)
         self.children = {
             cards: KuhnPlayerMoveGameState(
-                self, A, [],  cards, [BET, CHECK]
+                self, A, [], cards, [BET, CHECK]
             ) for cards in self.actions
         }
         self._chance_prob = 1. / len(self.children)
 
+    # noinspection PyMethodMayBeStatic
     def is_terminal(self):
         return False
 
@@ -40,6 +44,7 @@ class KuhnRootChanceGameState(GameStateBase):
     def sample_one(self):
         return random.choice(list(self.children.values()))
 
+
 class KuhnPlayerMoveGameState(GameStateBase):
 
     def __init__(self, parent, to_move, actions_history, cards, actions):
@@ -48,7 +53,7 @@ class KuhnPlayerMoveGameState(GameStateBase):
         self.actions_history = actions_history
         self.cards = cards
         self.children = {
-            a : KuhnPlayerMoveGameState(
+            a: KuhnPlayerMoveGameState(
                 self,
                 -to_move,
                 self.actions_history + [a],
@@ -80,11 +85,11 @@ class KuhnPlayerMoveGameState(GameStateBase):
         return self.actions == []
 
     def evaluation(self):
-        if self.is_terminal() == False:
+        if not self.is_terminal():
             raise RuntimeError("trying to evaluate non-terminal node")
 
         if self.actions_history[-1] == CHECK and self.actions_history[-2] == CHECK:
-            return RESULTS_MAP[self.cards] * 1 # only ante is won/lost
+            return RESULTS_MAP[self.cards] * 1  # only ante is won/lost
 
         if self.actions_history[-2] == BET and self.actions_history[-1] == CALL:
             return RESULTS_MAP[self.cards] * 2
