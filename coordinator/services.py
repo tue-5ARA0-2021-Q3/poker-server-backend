@@ -2,7 +2,7 @@ import grpc
 import sys
 import threading
 
-from coordinator.games.kuhn_lobby import KuhnGameLobby
+from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, GameTypes
 from proto.game import game_pb2
@@ -67,7 +67,7 @@ class GameCoordinatorService(Service):
         try:
             for message in request:
                 if message.action != 'CONNECT' and message.action != 'WAIT':
-                    lobby.channel.put({'player_id': token, 'action': message.action})
+                    lobby.channel.put(KuhnGameLobbyPlayerMessage(token, message.action))
                 response = player_channel.get()
                 state = response.state
                 actions = response.actions

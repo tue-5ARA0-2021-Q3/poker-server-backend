@@ -22,6 +22,13 @@ class KuhnGameLobbyStageError(object):
         self.error = error
 
 
+class KuhnGameLobbyPlayerMessage(object):
+
+    def __init__(self, player_id, action):
+        self.player_id = player_id
+        self.action = action
+
+
 class KuhnGameLobbyPlayer(object):
 
     def __init__(self, player_id: int, bank: int):
@@ -173,8 +180,8 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
 
                 print(f'Received a message: {message}')
 
-                if message['player_id'] == player_id_turn:
-                    stage.play(message['action'])
+                if message.player_id == player_id_turn:
+                    stage.play(message.action)
 
                     if stage.is_terminal():
                         for player in players:
@@ -183,8 +190,7 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                     else:
                         player_id_turn = lobby.get_player_opponent(player_id_turn)
                         lobby.get_player(player_id_turn).send_message(KuhnGameLobbyStageMessage(stage.secret_inf_set(), stage.actions()))
-                elif message['player_id'] == lobby.get_player_opponent(player_id_turn) and \
-                        (message['action'] == 'START' or message['action'] == 'WAIT'):
+                elif message.action == 'START' or message.action == 'WAIT':
                     continue
                 else:
                     print(f'Warn: unexpected message: {message}')
