@@ -7,7 +7,7 @@
             <table class="ui very basic table">
                 <thead>
                 <tr>
-                    <th>Player's Token</th>
+                    <th>Player</th>
                     <th>Games Won</th>
                     <th>Games Lost</th>
                     <th>Games Total</th>
@@ -16,7 +16,7 @@
                 <tbody>
                 {% for player in leaderboard %}
                     <tr>
-                        <td>{{ player.player_token }}</td>
+                        <td>{{ player.name }}</td>
                         <td>{{ player.games_won }}</td>
                         <td>{{ player.games_lost }}</td>
                         <td>{{ player.games_total }}</td>

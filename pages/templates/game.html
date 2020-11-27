@@ -51,11 +51,11 @@
                     </thead>
                     <tbody>
                     <tr>
-                        <td>{{ game.created_by }}</td>
+                        <td>{{ game.created_by.name }}</td>
                         <td>{{ game.created_at }}</td>
-                        <td>{{ game.player_1 }}</td>
-                        <td>{{ game.player_2 }}</td>
-                        <td>{{ game.winner_id }}</td>
+                        <td>{{ game.player1.name }}</td>
+                        <td>{{ game.player2.name }}</td>
+                        <td>{{ game.winner.name }}</td>
                     </tr>
                     </tbody>
                 </table>

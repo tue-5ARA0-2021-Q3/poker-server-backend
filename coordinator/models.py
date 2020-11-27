@@ -1,15 +1,72 @@
 from django.db import models
 from django.contrib import admin
 from enum import IntEnum
-import uuid
 
+import uuid
+import random
 
 # Create your models here.
 
+RandomUserNames = [
+    'Unique Sandpiper',
+    'Crazy Termite',
+    'Rubbery Buffalo',
+    'Reckless Chamois',
+    'Legal Mosquitoe',
+    'Ringed Lizard',
+    'Fiery Turtledove',
+    'Original Racehorse',
+    'One Owl',
+    'Luminous Marten',
+    'Lonely Gelding',
+    'Favorite Hawk',
+    'Fond Pony',
+    'Wide Cod',
+    'Ill Hyena',
+    'Unguarded Curlew',
+    'Yielding Sheldrake',
+    'Yellow Ishchimpanzee',
+    'Stingy Raven',
+    'Wan Lemur',
+    'Perfumed Squirrel',
+    'Nippy Robin',
+    'Sweet Badger',
+    'Greedy Goldfinch',
+    'Mature Antelope',
+    'Leafy Ibis',
+    'Puffy Orangutan',
+    'Immense Panda',
+    'Wise Peafowl',
+    'Agonizing Anaconda',
+    'Thankful Bloodhound',
+    'Special Sparrow',
+    'Young Swan',
+    'Elastic Ponie',
+    'Previous Goose',
+    'Disruptive Teal',
+    'Pungent Kangaroo',
+    'Hidden Pelican',
+    'Slovenly Jellyfish',
+]
+
+
+def pick_random_username():
+    return random.choice(RandomUserNames)
+
+
 class Player(models.Model):
     token = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
-    name = models.CharField(max_length = 128, null = True)
+    public_token = models.UUIDField(default = uuid.uuid4, editable = False, null = False)
+    name = models.CharField(max_length = 128, null = False, default = pick_random_username)
     email = models.EmailField(null = True)
+
+
+class PlayerAdmin(admin.ModelAdmin):
+    list_display = ('token', 'public_token', 'name', 'email')
+    readonly_fields = ('token', 'public_token')
+
+    class Meta:
+        model = Player
 
 
 class GameTypes(IntEnum):
@@ -18,7 +75,7 @@ class GameTypes(IntEnum):
 
     @classmethod
     def choices(cls):
-        return [ (key.value, key.name) for key in cls ]
+        return [(key.value, key.name) for key in cls]
 
 
 class Game(models.Model):

@@ -9,10 +9,36 @@ def home_view(request, *args, **kwargs):
     return render(request, "home.html", {})
 
 
+def fetch_game_info(game):
+    player1 = '-'
+    player2 = '-'
+    winner = '-'
+
+    created_by = Player.objects.get(token = game.created_by)
+
+    if game.player_1 is not None:
+        player1 = Player.objects.get(token = game.player_1)
+
+    if game.player_2 is not None:
+        player2 = Player.objects.get(token = game.player_2)
+
+    if game.winner_id is not None:
+        winner = Player.objects.get(token = game.winner_id)
+
+    return {
+        'id': game.id,
+        'created_at': game.created_at,
+        'created_by': created_by,
+        'player1': player1,
+        'player2': player2,
+        'winner': winner
+    }
+
+
 def games_view(request, *args, **kwargs):
     last_games = Game.objects.all().order_by('-created_at')[:10]
     return render(request, "games.html", {
-        'last_games': last_games
+        'last_games': list(map(fetch_game_info, last_games))
     })
 
 
@@ -35,7 +61,7 @@ def game_view(request, *args, **kwargs):
                 }
 
             options['is_game_found'] = True
-            options['game'] = game
+            options['game'] = fetch_game_info(game)
             options['events'] = list(map(parse_event, game.outcome.split('|')))
         except Exception as e:
             print(e)
@@ -52,7 +78,7 @@ def leaderboard_view(request, *args, **kwargs):
         games_won = len(list(filter(lambda game: game.winner_id == player.token, games)))
         games_lost = len(games) - games_won
         leaderboard.append({
-            'player_token': player.token,
+            'name': player.name,
             'games_total': len(games),
             'games_won': games_won,
             'games_lost': games_lost

@@ -31,9 +31,9 @@
                     <tr>
                         <td data-label="id"><a href="/game/{{ game.id }}/" rel="noopener">{{ game.id }}</a></td>
                         <td data-label="created_at">{{ game.created_at }}</td>
-                        <td data-label="player_1">{{ game.player_1 }}</td>
-                        <td data-label="player_2">{{ game.player_2 }}</td>
-                        <td data-label="winner_id">{{ game.winner_id }}</td>
+                        <td data-label="player_1">{{ game.player1.name }}</td>
+                        <td data-label="player_2">{{ game.player2.name }}</td>
+                        <td data-label="winner_id">{{ game.winner.name }}</td>
                     </tr>
                 {% endfor %}
                 </tbody>
