@@ -150,6 +150,9 @@ class KuhnGameLobby(object):
             if self.get_num_players() >= 2:
                 raise Exception('Game lobby is full')
 
+            if player_id in self.get_player_ids():
+                raise Exception('Player with the same id is already exist in this lobby')
+
             # For each player we create a separate channel for messages between game coordinator and player
             self._players[player_id] = KuhnGameLobbyPlayer(player_id, bank = KuhnGameLobby.InitialBank)
 
