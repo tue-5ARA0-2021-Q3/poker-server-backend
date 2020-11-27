@@ -47,32 +47,30 @@ class GameCoordinatorService(Service):
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Play(self, request, context):
-
         # First check method's metadata and extract player's secret token and game_id
         metadata = dict(context.invocation_metadata())
         token = metadata['token']
         game_id = metadata['game_id']
-
-        # We look up for a game object in database
-        # It should exist at this point otherwise function throws an error and game ends immediately
-        game_db = Game.objects.get(id = game_id)
-
-        if game_db.is_finished:
-            raise Exception('Game is finished')
-
-        # First connected player creates a game coordinator
-        # Second connected player does not create a new game coordinator, but reuses the same one
-        lobby = GameCoordinatorService.create_game_lobby_instance(game_id)
-        lobby.start()
-
-        # Each player should register themself in the game coordinator lobby
-        lobby.register_player(token)
-        lobby.wait_for_players()
-
-        # Each player has its unique channel to communicate with the game coordinator lobby
-        player_channel = lobby.get_player_channel(token)
-
         try:
+            # We look up for a game object in database
+            # It should exist at this point otherwise function throws an error and game ends immediately
+            game_db = Game.objects.get(id = game_id)
+
+            if game_db.is_finished:
+                raise Exception('Game is finished')
+
+            # First connected player creates a game coordinator
+            # Second connected player does not create a new game coordinator, but reuses the same one
+            lobby = GameCoordinatorService.create_game_lobby_instance(game_id)
+            lobby.start()
+
+            # Each player should register themself in the game coordinator lobby
+            lobby.register_player(token)
+            lobby.wait_for_players()
+
+            # Each player has its unique channel to communicate with the game coordinator lobby
+            player_channel = lobby.get_player_channel(token)
+
             # We run this inner loop until we have some messages from connected player
             for message in request:
                 # Check against utility messages: 'CONNECT' and 'WAIT'
@@ -96,13 +94,12 @@ class GameCoordinatorService(Service):
                     yield game_pb2.PlayGameResponse(state = f'ERROR:{response.error}', available_actions = [])
                     lobby.finish(error = response.error)
                     break
+
+            GameCoordinatorService.remove_game_lobby_instance(game_id)
         except grpc.RpcError:
             pass
         except Exception as e:
-            print('Unhandled exception: ', e)
-            print(sys.exc_info())
-        finally:
-            GameCoordinatorService.remove_game_lobby_instance(game_id)
+            yield game_pb2.PlayGameResponse(state = f'ERROR:{e}', available_actions = [])
 
     @staticmethod
     def create_game_lobby_instance(game_id: str) -> KuhnGameLobby:
