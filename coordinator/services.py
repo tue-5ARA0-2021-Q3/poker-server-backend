@@ -50,7 +50,8 @@ class GameCoordinatorService(Service):
 
         # First check method's metadata and extract player's secret token and game_id
         metadata = dict(context.invocation_metadata())
-        token, game_id = metadata['token'], metadata['game_id']
+        token = metadata['token']
+        game_id = metadata['game_id']
 
         # We look up for a game object in database
         # It should exist at this point otherwise function throws an error and game ends immediately
@@ -93,7 +94,7 @@ class GameCoordinatorService(Service):
                 # In this case we just notify player's agent and close the lobby
                 elif isinstance(response, KuhnGameLobbyStageError):
                     yield game_pb2.PlayGameResponse(state = f'ERROR:{response.error}', available_actions = [])
-                    lobby.close(error = response.error)
+                    lobby.finish(error = response.error)
                     break
         except grpc.RpcError:
             pass
@@ -102,26 +103,6 @@ class GameCoordinatorService(Service):
             print(sys.exc_info())
         finally:
             GameCoordinatorService.remove_game_lobby_instance(game_id)
-
-        # # time.sleep(1.0)
-
-        # if instance.is_opponent_waiting(token):
-        #     instance.notify_opponent(token)
-
-        # # Game.objects.update(id = game_id, is_finished = True)
-        # if instance.is_primary_player(token):
-        #     with GameCoordinatorService.games_lock:
-        #         try:
-        #             instance.finish_game()
-        #             game_db = Game.objects.get(id = game_id)
-        #             game_db.is_finished = True
-        #             game_db.winner_id = instance.get_winner_id()
-        #             game_db.outcome = instance.get_outcomes()
-        #             game_db.save(update_fields = [ 'is_finished', 'winner_id', 'outcome' ])
-        #             GameCoordinatorService.games.remove(instance)
-        #         except:
-        #             print("Unexpected error:", sys.exc_info()[ 0 ])
-        #             return
 
     @staticmethod
     def create_game_lobby_instance(game_id: str) -> KuhnGameLobby:

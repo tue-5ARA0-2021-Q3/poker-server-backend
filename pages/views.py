@@ -37,7 +37,8 @@ def game_view(request, *args, **kwargs):
             options['is_game_found'] = True
             options['game'] = game
             options['events'] = list(map(parse_event, game.outcome.split('|')))
-        except:
+        except Exception as e:
+            print(e)
             options['is_game_found'] = False
 
     return render(request, "game.html", options)
