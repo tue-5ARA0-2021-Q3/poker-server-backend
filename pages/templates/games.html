@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="ui raised segments">
-        <h3 class="ui top attached header">Last 10 played games</h3>
+        <h3 class="ui top attached header">Last {{ last_games | length }} played games</h3>
         <div class="ui blue segment">
             <div class="ui grid">
                 <div class="ui twelve wide column">
@@ -19,7 +19,7 @@
             <table class="ui celled table">
                 <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Game ID</th>
                     <th>Created at</th>
                     <th>Player 1</th>
                     <th>Player 2</th>
