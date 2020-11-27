@@ -91,6 +91,12 @@ class KuhnGameLobby(object):
     InitialBank = 5
     MessagesTimeout = 5
 
+    class GameLobbyFullError(Exception):
+        pass
+
+    class PlayerAlreadyExistError(Exception):
+        pass
+
     def __init__(self, game_id: str):
         self.lock = threading.Lock()
         self.game_id = game_id
@@ -144,14 +150,17 @@ class KuhnGameLobby(object):
                                                                   args = (self, KuhnGameLobby.MessagesTimeout))
                 self._lobby_coordinator_thread.start()
 
+    def is_player_registered(self, player_id: str) -> bool:
+        return player_id in self.get_player_ids()
+
     def register_player(self, player_id: str):
         with self.lock:
             # Check if lobby is already full or throw an exception otherwise
             if self.get_num_players() >= 2:
-                raise Exception('Game lobby is full')
+                raise KuhnGameLobby.GameLobbyFullError('Game lobby is full')
 
-            if player_id in self.get_player_ids():
-                raise Exception('Player with the same id is already exist in this lobby')
+            if self.is_player_registered(player_id):
+                raise KuhnGameLobby.PlayerAlreadyExistError('Player with the same id is already exist in this lobby')
 
             # For each player we create a separate channel for messages between game coordinator and player
             self._players[player_id] = KuhnGameLobbyPlayer(player_id, bank = KuhnGameLobby.InitialBank)

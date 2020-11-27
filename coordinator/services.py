@@ -51,6 +51,8 @@ class GameCoordinatorService(Service):
         metadata = dict(context.invocation_metadata())
         token = metadata['token']
         game_id = metadata['game_id']
+        lobby = GameCoordinatorService.create_game_lobby_instance(game_id)
+
         try:
             # We look up for a game object in database
             # It should exist at this point otherwise function throws an error and game ends immediately
@@ -61,7 +63,6 @@ class GameCoordinatorService(Service):
 
             # First connected player creates a game coordinator
             # Second connected player does not create a new game coordinator, but reuses the same one
-            lobby = GameCoordinatorService.create_game_lobby_instance(game_id)
             lobby.start()
 
             # Each player should register themself in the game coordinator lobby
@@ -95,11 +96,19 @@ class GameCoordinatorService(Service):
                     lobby.finish(error = response.error)
                     break
 
-            GameCoordinatorService.remove_game_lobby_instance(game_id)
+            if lobby.is_player_registered(token):
+                GameCoordinatorService.remove_game_lobby_instance(game_id)
         except grpc.RpcError:
             pass
+        except KuhnGameLobby.GameLobbyFullError:
+            yield game_pb2.PlayGameResponse(state = f'ERROR: Game lobby is full', available_actions = [])
+        except KuhnGameLobby.PlayerAlreadyExistError:
+            yield game_pb2.PlayGameResponse(state = f'ERROR: Player with the same id is already exist in this lobby',
+                                            available_actions = [])
         except Exception as e:
             yield game_pb2.PlayGameResponse(state = f'ERROR:{e}', available_actions = [])
+            if lobby.is_player_registered(token):
+                GameCoordinatorService.remove_game_lobby_instance(game_id)
 
     @staticmethod
     def create_game_lobby_instance(game_id: str) -> KuhnGameLobby:
