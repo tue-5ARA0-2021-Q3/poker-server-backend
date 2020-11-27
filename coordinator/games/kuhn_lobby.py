@@ -100,7 +100,7 @@ class KuhnGameLobby(object):
         self._players = {}
         self._player_opponent = {}
 
-    def close(self):
+    def close(self, error = None):
         with self.lock:
             self._closed.set()
 
@@ -173,6 +173,9 @@ class KuhnGameLobby(object):
 
     def create_new_round(self):
         last_round = self.get_last_round()
+        # Check if there was a round already and check if it was terminated
+        # Throw an error instead, in reality this error should never be raised since game coordinator
+        # creates a new round only on termination
         if last_round is None or last_round.stage.is_terminal():
             _round = KuhnGameRound(self)
             self.rounds.append(_round)
@@ -181,11 +184,19 @@ class KuhnGameLobby(object):
             raise Exception('It is not allowed to start a new round while previous one is not completed')
 
     def start_new_round(self, player_id):
+        # This function starts a new round for each player
+        # If player repeatedly sends 'START' messages this function won't do anything until a new round is created
         last_round = self.get_last_round()
+
+        # Check if player already started this round and exit if it is ture
         if player_id in last_round.started and last_round.started[player_id] is True:
             return
+
         player = self.get_player(player_id)
         last_round.started[player_id] = True
+
+        # First player (last_round.player_id_turn) starts the round so it receives a proper list of available actions
+        # Second player just waits
         if player.player_id == last_round.player_id_turn:
             player.send_message(KuhnGameLobbyStageMessage(f'{last_round.stage.card(0)}', last_round.stage.actions()))
         else:
@@ -193,22 +204,29 @@ class KuhnGameLobby(object):
 
 
 def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
-    lobby.wait_for_players()
-
     try:
-        current_round = lobby.create_new_round()
+        # In the beginning of the session lobby waits for both players to be connected
+        # Throws an error if second player did not connect in some reasonable amount of time (check wait_for_players() function)
+        lobby.wait_for_players()
 
+        # Once both players are connected lobby creates an initial round and
+        # starts this round automatically without waiting for players confirmation
+        # On next rounds game coordinator will wait for both players to start a new round explicitly via 'START' action
+        current_round = lobby.create_new_round()
         for player in lobby.get_players():
             lobby.start_new_round(player.player_id)
 
+        # TODO
         games_counter = 1
 
+        # We run an inner cycle until lobby is closed or to process last messages after lobby has been closed
         while not lobby.is_closed() or not lobby.channel.empty():
             try:
+                # Game coordinator waits for a message from any player
                 message = lobby.channel.get(timeout = messages_timeout)
 
-                print(f'Received a message: {message}')
-
+                # First we check if the message is about to start a new round
+                # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
                 if message.action == 'START':
                     if games_counter < 5:
                         lobby.start_new_round(message.player_id)
@@ -216,18 +234,25 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                         for player in lobby.get_players():
                             player.send_message(KuhnGameLobbyStageMessage('DEFEAT', []))
                         lobby.close()
+                # If message action is not 'START' we check that the message came from a player and assume it is their next action
                 elif message.player_id == current_round.player_id_turn:
+                    # We register current player's action in an inner stage object
                     current_round.stage.play(message.action)
+
                     if current_round.stage.is_terminal():
+                        # If the stage is terminal we notify both players and start a new round if both players have non-negative bank
+                        # TODO
                         for player in lobby.get_players():
                             player.send_message(KuhnGameLobbyStageMessage(f'END:{current_round.stage.inf_set()}', ['START']))
                         current_round = lobby.create_new_round()
                         games_counter = games_counter + 1
                     else:
+                        # If the stage is not terminal we swap current's player id and wait for a new action of second player
                         current_round.player_id_turn = lobby.get_player_opponent(current_round.player_id_turn)
                         lobby.get_player(current_round.player_id_turn).send_message(
                             KuhnGameLobbyStageMessage(current_round.stage.secret_inf_set(), current_round.stage.actions())
                         )
+                # Wait is an utility message
                 elif message.action == 'WAIT':
                     continue
                 else:

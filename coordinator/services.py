@@ -47,35 +47,53 @@ class GameCoordinatorService(Service):
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Play(self, request, context):
-        metadata = dict(context.invocation_metadata())
-        token = metadata['token']
-        game_id = metadata['game_id']
 
+        # First check method's metadata and extract player's secret token and game_id
+        metadata = dict(context.invocation_metadata())
+        token, game_id = metadata['token'], metadata['game_id']
+
+        # We look up for a game object in database
+        # It should exist at this point otherwise function throws an error and game ends immediately
         game_db = Game.objects.get(id = game_id)
 
         if game_db.is_finished:
             raise Exception('Game is finished')
 
+        # First connected player creates a game coordinator
+        # Second connected player does not create a new game coordinator, but reuses the same one
         lobby = GameCoordinatorService.create_game_lobby_instance(game_id)
         lobby.start()
 
+        # Each player should register themself in the game coordinator lobby
         lobby.register_player(token)
         lobby.wait_for_players()
 
+        # Each player has its unique channel to communicate with the game coordinator lobby
         player_channel = lobby.get_player_channel(token)
 
         try:
+            # We run this inner loop until we have some messages from connected player
             for message in request:
+                # Check against utility messages: 'CONNECT' and 'WAIT'
+                # In principle this messages do nothing, but can be used to initiate a new game or to wait for another player action
                 if message.action != 'CONNECT' and message.action != 'WAIT':
                     lobby.channel.put(KuhnGameLobbyPlayerMessage(token, message.action))
+
+                # Waiting for a response from the game coordinator about another player's decision and available actions
                 response = player_channel.get()
+
+                # Normally the game coordinator returns an instance of KuhnGameLobbyStageMessage
+                # It contains 'state' and 'available_actions' fields
+                # Server redirects this information to a player's agent and will wait for its decision in a next message
                 if isinstance(response, KuhnGameLobbyStageMessage):
                     state = response.state
                     actions = response.actions
                     yield game_pb2.PlayGameResponse(state = state, available_actions = actions)
+                # It might happen that some error has been occurred
+                # In this case we just notify player's agent and close the lobby
                 elif isinstance(response, KuhnGameLobbyStageError):
                     yield game_pb2.PlayGameResponse(state = f'ERROR:{response.error}', available_actions = [])
-                    lobby.close()
+                    lobby.close(error = response.error)
                     break
         except grpc.RpcError:
             pass
@@ -83,7 +101,6 @@ class GameCoordinatorService(Service):
             print('Unhandled exception: ', e)
             print(sys.exc_info())
         finally:
-            # lobby_channel.put({'player_id': token, 'action': 'DISCONNECTED'})
             GameCoordinatorService.remove_game_lobby_instance(game_id)
 
         # # time.sleep(1.0)
