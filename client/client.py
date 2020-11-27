@@ -50,15 +50,22 @@ class Client(object):
             requests.set_initial_request(game_pb2.PlayGameRequest(action = 'CONNECT'))
 
             for response in stub.Play(requests, metadata = metadata):
-                state.save_action_in_history(response.state)
                 if response.available_actions != ['WAIT']:
                     state.set_available_actions(response.available_actions)
-                    if response.state.startswith('END'):
+                    if response.state.startswith('DEFEAT') or response.state.startswith('WIN'):
                         break
+                    elif response.state.startswith('ERROR'):
+                        agent.on_error(response.state)
+                        break
+                    elif response.state.startswith('END'):
+                        state.save_action_in_history(response.state, last = True)
+                        requests.make_request(game_pb2.PlayGameRequest(action = 'START'))
                     else:
+                        state.save_action_in_history(response.state, last = False)
                         next_action = agent.make_action(state)
                         requests.make_request(game_pb2.PlayGameRequest(action = next_action))
                 else:
+                    state.save_action_in_history(response.state, last = False)
                     requests.make_request(game_pb2.PlayGameRequest(action = 'WAIT'))
 
             requests.make_request(game_pb2.PlayGameRequest(action = 'END'))

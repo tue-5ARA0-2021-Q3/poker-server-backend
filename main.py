@@ -24,6 +24,9 @@ class MyPokerAgent(object):
         available_actions = state.available_actions()
         return random.choice(available_actions)
 
+    def on_error(self, error):
+        print(error)
+
     def end(self, state):
         print('Moves history after the end: ', state.history())
 

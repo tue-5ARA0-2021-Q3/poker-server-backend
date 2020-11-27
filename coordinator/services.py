@@ -2,7 +2,7 @@ import grpc
 import sys
 import threading
 
-from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage
+from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage, KuhnGameLobbyStageMessage, KuhnGameLobbyStageError
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, GameTypes
 from proto.game import game_pb2
@@ -69,9 +69,14 @@ class GameCoordinatorService(Service):
                 if message.action != 'CONNECT' and message.action != 'WAIT':
                     lobby.channel.put(KuhnGameLobbyPlayerMessage(token, message.action))
                 response = player_channel.get()
-                state = response.state
-                actions = response.actions
-                yield game_pb2.PlayGameResponse(state = state, available_actions = actions)
+                if isinstance(response, KuhnGameLobbyStageMessage):
+                    state = response.state
+                    actions = response.actions
+                    yield game_pb2.PlayGameResponse(state = state, available_actions = actions)
+                elif isinstance(response, KuhnGameLobbyStageError):
+                    yield game_pb2.PlayGameResponse(state = f'ERROR:{response.error}', available_actions = [])
+                    lobby.close()
+                    break
         except grpc.RpcError:
             pass
         except Exception as e:

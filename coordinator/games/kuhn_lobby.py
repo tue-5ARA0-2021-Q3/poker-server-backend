@@ -72,6 +72,16 @@ class KuhnGameLobbyStage(object):
         return self._stage.secret_inf_set()
 
 
+class KuhnGameRound(object):
+
+    def __init__(self, lobby):
+        self.lobby = lobby
+        self.stage = KuhnGameLobbyStage(lobby)
+        self.first_player = lobby.get_random_player_id()
+        self.player_id_turn = self.first_player
+        self.started = {}
+
+
 class KuhnGameLobby(object):
     InitialBank = 5
     MessagesTimeout = 5
@@ -79,7 +89,7 @@ class KuhnGameLobby(object):
     def __init__(self, game_id: str):
         self.lock = threading.Lock()
         self.game_id = game_id
-        self.stages = []
+        self.rounds = []
         self.channel = queue.Queue()
 
         # private fields
@@ -158,21 +168,40 @@ class KuhnGameLobby(object):
         except threading.BrokenBarrierError:
             raise Exception('Timeout waiting for another player to connect')
 
+    def get_last_round(self):
+        return self.rounds[-1] if len(self.rounds) >= 1 else None
+
+    def create_new_round(self):
+        last_round = self.get_last_round()
+        if last_round is None or last_round.stage.is_terminal():
+            _round = KuhnGameRound(self)
+            self.rounds.append(_round)
+            return _round
+        else:
+            raise Exception('It is not allowed to start a new round while previous one is not completed')
+
+    def start_new_round(self, player_id):
+        last_round = self.get_last_round()
+        if player_id in last_round.started and last_round.started[player_id] is True:
+            return
+        player = self.get_player(player_id)
+        last_round.started[player_id] = True
+        if player.player_id == last_round.player_id_turn:
+            player.send_message(KuhnGameLobbyStageMessage(f'{last_round.stage.card(0)}', last_round.stage.actions()))
+        else:
+            player.send_message(KuhnGameLobbyStageMessage(f'{last_round.stage.card(1)}', ['WAIT']))
+
 
 def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
     lobby.wait_for_players()
 
     try:
-        stage = KuhnGameLobbyStage(lobby)
+        current_round = lobby.create_new_round()
 
-        players = lobby.get_players()
-        player_id_turn = lobby.get_random_player_id()
+        for player in lobby.get_players():
+            lobby.start_new_round(player.player_id)
 
-        for player in players:
-            if player.player_id == player_id_turn:
-                player.send_message(KuhnGameLobbyStageMessage(f'{stage.card(0)}', stage.actions()))
-            else:
-                player.send_message(KuhnGameLobbyStageMessage(f'{stage.card(1)}', ['WAIT']))
+        games_counter = 1
 
         while not lobby.is_closed() or not lobby.channel.empty():
             try:
@@ -180,17 +209,26 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
 
                 print(f'Received a message: {message}')
 
-                if message.player_id == player_id_turn:
-                    stage.play(message.action)
-
-                    if stage.is_terminal():
-                        for player in players:
-                            player.send_message(KuhnGameLobbyStageMessage(f'END:{stage.inf_set()}', ['END']))
-                        lobby.close()
+                if message.action == 'START':
+                    if games_counter < 5:
+                        lobby.start_new_round(message.player_id)
                     else:
-                        player_id_turn = lobby.get_player_opponent(player_id_turn)
-                        lobby.get_player(player_id_turn).send_message(KuhnGameLobbyStageMessage(stage.secret_inf_set(), stage.actions()))
-                elif message.action == 'START' or message.action == 'WAIT':
+                        for player in lobby.get_players():
+                            player.send_message(KuhnGameLobbyStageMessage('DEFEAT', []))
+                        lobby.close()
+                elif message.player_id == current_round.player_id_turn:
+                    current_round.stage.play(message.action)
+                    if current_round.stage.is_terminal():
+                        for player in lobby.get_players():
+                            player.send_message(KuhnGameLobbyStageMessage(f'END:{current_round.stage.inf_set()}', ['START']))
+                        current_round = lobby.create_new_round()
+                        games_counter = games_counter + 1
+                    else:
+                        current_round.player_id_turn = lobby.get_player_opponent(current_round.player_id_turn)
+                        lobby.get_player(current_round.player_id_turn).send_message(
+                            KuhnGameLobbyStageMessage(current_round.stage.secret_inf_set(), current_round.stage.actions())
+                        )
+                elif message.action == 'WAIT':
                     continue
                 else:
                     print(f'Warn: unexpected message: {message}')
@@ -203,6 +241,7 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
         for player in lobby.get_players():
             # noinspection PyBroadException
             try:
+                print(f'Exception: {e}')
                 player.send_error(KuhnGameLobbyStageError(e))
             except Exception:
                 pass
