@@ -1,6 +1,6 @@
 import grpc
 
-from client.state import GameState
+from client.state import ClientGameState
 from client.events import ClientRequestEventsIterator
 
 from proto.game import game_pb2
@@ -33,7 +33,6 @@ class Client(object):
         with grpc.insecure_channel('localhost:50051') as channel:
             stub = game_pb2_grpc.GameCoordinatorControllerStub(channel)
             requests = ClientRequestEventsIterator()
-            state = GameState()
 
             if game_id == 'random':
                 request_random_game = stub.FindOrCreate(game_pb2.CreateGameRequest(token = self.token))
@@ -47,29 +46,53 @@ class Client(object):
                 ('game_id', str(game_id))
             ]
 
+            state = ClientGameState(str(game_id), str(self.token), 5)
+            state.start_new_round()
+
+            agent.on_new_round_request(state)
+
             requests.set_initial_request(game_pb2.PlayGameRequest(action = 'CONNECT'))
 
             for response in stub.Play(requests, metadata = metadata):
+
+                if response.state.startswith('CARD'):
+                    _, order, card = response.state.split(':')
+                    state.get_last_round_state().set_turn_order(order)
+                    state.get_last_round_state().set_card(card)
+
                 if response.available_actions != ['WAIT']:
-                    state.set_available_actions(response.available_actions)
+                    state.get_last_round_state().set_available_actions(response.available_actions)
                     if response.state.startswith('DEFEAT') or response.state.startswith('WIN'):
+                        agent.end(state, response.state)
                         break
                     elif response.state.startswith('ERROR'):
                         agent.on_error(response.state)
                         break
                     elif response.state.startswith('END'):
-                        state.save_action_in_history(response.state, last = True)
+                        _, outcome, result = response.state.split(':')
+                        _, cards, *last = result.split('.')
+                        state.get_last_round_state().add_move_history('.'.join(last))
+                        state.get_last_round_state().set_outcome(outcome)
+                        state.get_last_round_state().set_result(result)
+                        state.get_last_round_state().set_cards(cards)
+                        state.update_bank(outcome)
+                        agent.on_round_end(state, state.get_last_round_state())
+                        state.start_new_round()
+                        agent.on_new_round_request(state)
                         requests.make_request(game_pb2.PlayGameRequest(action = 'START'))
                     else:
-                        state.save_action_in_history(response.state, last = False)
-                        next_action = agent.make_action(state)
+                        if not response.state.startswith('CARD'):
+                            state.get_last_round_state().add_move_history(response.state)
+                        next_action = agent.make_action(state, state.get_last_round_state())
+                        if response.state.startswith('CARD'):
+                            state.get_last_round_state().add_move_history(f'{next_action}')
+                        else:
+                            state.get_last_round_state().add_move_history(f'{response.state}.{next_action}')
                         requests.make_request(game_pb2.PlayGameRequest(action = next_action))
                 else:
-                    state.save_action_in_history(response.state, last = False)
                     requests.make_request(game_pb2.PlayGameRequest(action = 'WAIT'))
 
             requests.make_request(game_pb2.PlayGameRequest(action = 'END'))
 
-            agent.end(state)
             requests.close()
-            return state.history()
+            return state

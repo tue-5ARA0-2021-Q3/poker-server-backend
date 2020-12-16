@@ -216,9 +216,9 @@ class KuhnGameLobby(object):
         # First player (last_round.player_id_turn) starts the round so it receives a proper list of available actions
         # Second player just waits
         if player.player_id == last_round.player_id_turn:
-            player.send_message(KuhnGameLobbyStageMessage(f'{last_round.stage.card(0)}', last_round.stage.actions()))
+            player.send_message(KuhnGameLobbyStageMessage(f'CARD:1:{last_round.stage.card(0)}', last_round.stage.actions()))
         else:
-            player.send_message(KuhnGameLobbyStageMessage(f'{last_round.stage.card(1)}', ['WAIT']))
+            player.send_message(KuhnGameLobbyStageMessage(f'CARD:2:{last_round.stage.card(1)}', ['WAIT']))
 
     def evaluate_round(self):
         # This function evaluate a round's outcome at the terminal stage
@@ -242,6 +242,14 @@ class KuhnGameLobby(object):
 
             last_round.evaluation = evaluation
             last_round.is_evaluated = True
+
+    def convert_evaluation(self, evaluation, player_id):
+        with self.lock:
+            last_round = self.get_last_round()
+            if last_round.first_player == player_id:
+                return evaluation
+            else:
+                return -evaluation
 
     def check_players_bank(self):
         # Check if lobby can create a new round
@@ -323,7 +331,12 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                         # If the stage is terminal we notify both players and start a new round if both players have non-negative bank
                         # TODO
                         for player in lobby.get_players():
-                            player.send_message(KuhnGameLobbyStageMessage(f'END:{current_round.stage.inf_set()}', ['START']))
+                            player.send_message(
+                                KuhnGameLobbyStageMessage(
+                                    f'END:{lobby.convert_evaluation(current_round.stage.evaluation(), player.player_id)}:{current_round.stage.inf_set()}',
+                                    ['START']
+                                )
+                            )
                         lobby.evaluate_round()
                         current_round = lobby.create_new_round()
                     else:

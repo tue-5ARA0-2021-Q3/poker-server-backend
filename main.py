@@ -3,12 +3,12 @@ from client.client import Client
 import argparse
 import random
 
-parser = argparse.ArgumentParser(description='Poker client CLI')
+parser = argparse.ArgumentParser(description = 'Poker client CLI')
 
-parser.add_argument('--token', help='Player\'s token')
-parser.add_argument('--play', help='Existing game id or \'random\' for random match')
-parser.add_argument('--list', action='store_true', help='Get player\'s list of games', default=False)
-parser.add_argument('--create', action='store_true', help='Create a new game', default=False)
+parser.add_argument('--token', help = 'Player\'s token')
+parser.add_argument('--play', help = 'Existing game id or \'random\' for random match')
+parser.add_argument('--list', action = 'store_true', help = 'Get player\'s list of games', default = False)
+parser.add_argument('--create', action = 'store_true', help = 'Create a new game', default = False)
 
 # foo()
 args = parser.parse_args()
@@ -19,16 +19,23 @@ class MyPokerAgent(object):
     def __init__(self):
         self.moves_count = 0
 
-    def make_action(self, state):
+    def make_action(self, state, round):
         # history           = state.history()
-        available_actions = state.available_actions()
+        available_actions = round.get_available_actions()
         return random.choice(available_actions)
 
     def on_error(self, error):
         print(error)
 
-    def end(self, state):
-        print('Moves history after the end: ', state.history())
+    def on_new_round_request(self, state):
+        print('New round requested, bank: ', state.get_player_bank())
+
+    def on_round_end(self, state, round):
+        print(round.get_round_id(), f'[{round.get_card()}|{round.get_turn_order()}]', ':', round.moves_history(), '->',
+              f'{round.get_outcome()}|{round.get_cards()}')
+
+    def end(self, state, result):
+        print('Game ended. Result: ', result)
 
 
 if args.token is not None:
