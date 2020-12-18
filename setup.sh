@@ -13,5 +13,7 @@ fi
 
 source venv/bin/activate
 
+./generate-proto.sh
+
 python manage.py makemigrations
 python manage.py migrate
