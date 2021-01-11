@@ -66,7 +66,11 @@ class KuhnGameLobbyStage(object):
         return self._stage.is_terminal()
 
     def inf_set(self):
-        return self._stage.inf_set()
+        _inf_set = self._stage.inf_set()
+        _, cards, *moves = _inf_set.split('.')
+        # We return showdown only in case of last action was CALL
+        _cards = cards if moves[-1] == 'CALL' else '??'
+        return f'{_}.{_cards}.{".".join(moves)}'  # self._stage.inf_set()
 
     def secret_inf_set(self):
         return self._stage.secret_inf_set()
@@ -77,14 +81,17 @@ class KuhnGameLobbyStage(object):
 
 class KuhnGameRound(object):
 
-    def __init__(self, lobby):
+    def __init__(self, lobby, first_player = None):
         self.lobby = lobby
         self.stage = KuhnGameLobbyStage(lobby)
-        self.first_player = lobby.get_random_player_id()
-        self.player_id_turn = self.first_player
         self.started = {}
         self.evaluation = 0
         self.is_evaluated = False
+        if first_player is None:
+            self.first_player = lobby.get_random_player_id()
+        else:
+            self.first_player = first_player
+        self.player_id_turn = self.first_player
 
 
 class KuhnGameLobby(object):
@@ -195,7 +202,8 @@ class KuhnGameLobby(object):
         # Throw an error instead, in reality this error should never be raised since game coordinator
         # creates a new round only on termination
         if last_round is None or last_round.stage.is_terminal():
-            _round = KuhnGameRound(self)
+            _first_player = self.get_player_opponent(last_round.first_player) if last_round is not None else None
+            _round = KuhnGameRound(self, first_player = _first_player)
             self.rounds.append(_round)
             return _round
         else:
@@ -349,7 +357,7 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                 elif message.action == 'WAIT':
                     continue
                 else:
-                    print(f'Warn: unexpected message: {message}')
+                    print(f'Warn: unexpected message from player_id = {message.player_id}: [ action = {message.action} ]')
                     continue
 
             except queue.Empty:
