@@ -2,9 +2,11 @@ import grpc
 import sys
 import threading
 
-from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage, KuhnGameLobbyStageMessage, KuhnGameLobbyStageError
+from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage, KuhnGameLobbyStageMessage, KuhnGameLobbyStageError, \
+    KuhnGameLobbyStageCardDeal
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, GameTypes
+from coordinator.utilities.card import Card
 from proto.game import game_pb2
 
 
@@ -82,10 +84,15 @@ class GameCoordinatorService(Service):
                 # Waiting for a response from the game coordinator about another player's decision and available actions
                 response = player_channel.get()
 
+                if isinstance(response, KuhnGameLobbyStageCardDeal):
+                    state = f'CARD:{ response.turn_order }:{ response.card }'
+                    actions = response.actions
+                    card_image = Card(response.card).get_image(0.1).tobytes('raw')
+                    yield game_pb2.PlayGameResponse(state = state, available_actions = actions, card_image = card_image)
                 # Normally the game coordinator returns an instance of KuhnGameLobbyStageMessage
                 # It contains 'state' and 'available_actions' fields
                 # Server redirects this information to a player's agent and will wait for its decision in a next message
-                if isinstance(response, KuhnGameLobbyStageMessage):
+                elif isinstance(response, KuhnGameLobbyStageMessage):
                     state = response.state
                     actions = response.actions
                     yield game_pb2.PlayGameResponse(state = state, available_actions = actions)

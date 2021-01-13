@@ -5,3 +5,5 @@ djangogrpcframework==0.2
 django_grpc_framework==0.3.0
 django-mathfilters==1.0.0
 protobuf==3.14.0
+matplotlib==3.3.3
+Pillow==8.1.0

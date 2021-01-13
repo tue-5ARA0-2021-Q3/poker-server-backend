@@ -2,11 +2,19 @@ import threading
 import queue
 import random
 
-from typing import List
+from typing import List, Union
 
 from coordinator.games.kuhn_game import KuhnRootChanceGameState
-from coordinator.games.kuhn_constants import CARDS_DEALINGS, NEXT
+from coordinator.games.kuhn_constants import CARDS_DEALINGS
 from coordinator.models import Game
+
+
+class KuhnGameLobbyStageCardDeal(object):
+
+    def __init__(self, card, turn_order, actions):
+        self.card = card
+        self.turn_order = turn_order
+        self.actions = actions
 
 
 class KuhnGameLobbyStageMessage(object):
@@ -36,7 +44,7 @@ class KuhnGameLobbyPlayer(object):
         self.bank = bank
         self.channel = queue.Queue()
 
-    def send_message(self, message: KuhnGameLobbyStageMessage):
+    def send_message(self, message: Union[KuhnGameLobbyStageMessage, KuhnGameLobbyStageCardDeal]):
         self.channel.put(message)
 
     def send_error(self, error: KuhnGameLobbyStageError):
@@ -224,9 +232,9 @@ class KuhnGameLobby(object):
         # First player (last_round.player_id_turn) starts the round so it receives a proper list of available actions
         # Second player just waits
         if player.player_id == last_round.player_id_turn:
-            player.send_message(KuhnGameLobbyStageMessage(f'CARD:1:{last_round.stage.card(0)}', last_round.stage.actions()))
+            player.send_message(KuhnGameLobbyStageCardDeal(last_round.stage.card(0), '1', last_round.stage.actions()))
         else:
-            player.send_message(KuhnGameLobbyStageMessage(f'CARD:2:{last_round.stage.card(1)}', ['WAIT']))
+            player.send_message(KuhnGameLobbyStageCardDeal(last_round.stage.card(1), '2', ['WAIT']))
 
     def evaluate_round(self):
         # This function evaluate a round's outcome at the terminal stage
