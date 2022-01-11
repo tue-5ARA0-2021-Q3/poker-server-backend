@@ -1,4 +1,4 @@
 # /bin/sh
 
-py -3 manage.py makemigrations
-py -3 manage.py migrate --run-syncdb
+python manage.py makemigrations
+python manage.py migrate --run-syncdb
