@@ -3,10 +3,9 @@ import random
 from matplotlib import font_manager
 from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
-from coordinator.games.kuhn_constants import POSSIBLE_CARDS
 
 class Card:
-    RANKS = POSSIBLE_CARDS
+
     FONTS = [
         font_manager.findfont(font_manager.FontProperties(family = 'sans-serif', style = 'normal', weight = 'normal')),
         font_manager.findfont(font_manager.FontProperties(family = 'sans-serif', style = 'italic', weight = 'normal')),
@@ -19,12 +18,13 @@ class Card:
     NOISE_LEVEL = settings.CARD_GENERATED_IMAGE_NOISE_LEVEL
     ROTATE_MAX_ANGLE = settings.CARD_GENERATED_IMAGE_ROTATE_MAX_ANGLE
 
-    def __init__(self, rank):
+    def __init__(self, rank, valid):
         # Sanity check
-        if rank not in self.RANKS:
+        if rank not in valid:
             raise ValueError(f"Invalid rank: {rank}")
 
-        self.rank = rank
+        self.rank  = rank
+        self.valid = valid
 
     def get_image(self, noise_level = None):
         if noise_level is None:

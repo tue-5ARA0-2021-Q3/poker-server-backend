@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='game',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"\"\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"P\n\x10PlayGameResponse\x12\r\n\x05state\x18\x01 \x01(\t\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t\x12\x12\n\ncard_image\x18\x03 \x01(\x0c\x32\x93\x02\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x41\n\x0c\x46indOrCreate\x12\x17.game.CreateGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"5\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x11\n\tkuhn_type\x18\x02 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"P\n\x10PlayGameResponse\x12\r\n\x05state\x18\x01 \x01(\t\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t\x12\x12\n\ncard_image\x18\x03 \x01(\x0c\x32\x93\x02\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x41\n\x0c\x46indOrCreate\x12\x17.game.CreateGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
 )
 
 
@@ -38,6 +38,13 @@ _CREATEGAMEREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='kuhn_type', full_name='game.CreateGameRequest.kuhn_type', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -51,7 +58,7 @@ _CREATEGAMEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=31,
-  serialized_end=65,
+  serialized_end=84,
 )
 
 
@@ -81,8 +88,8 @@ _CREATEGAMERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=67,
-  serialized_end=99,
+  serialized_start=86,
+  serialized_end=118,
 )
 
 
@@ -112,8 +119,8 @@ _LISTGAMEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=101,
-  serialized_end=133,
+  serialized_start=120,
+  serialized_end=152,
 )
 
 
@@ -143,8 +150,8 @@ _LISTGAMERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=135,
-  serialized_end=171,
+  serialized_start=154,
+  serialized_end=190,
 )
 
 
@@ -174,8 +181,8 @@ _PLAYGAMEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=173,
-  serialized_end=206,
+  serialized_start=192,
+  serialized_end=225,
 )
 
 
@@ -219,8 +226,8 @@ _PLAYGAMERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=208,
-  serialized_end=288,
+  serialized_start=227,
+  serialized_end=307,
 )
 
 DESCRIPTOR.message_types_by_name['CreateGameRequest'] = _CREATEGAMEREQUEST
@@ -281,8 +288,8 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=291,
-  serialized_end=566,
+  serialized_start=310,
+  serialized_end=585,
   methods=[
   _descriptor.MethodDescriptor(
     name='Create',

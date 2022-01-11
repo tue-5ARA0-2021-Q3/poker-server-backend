@@ -80,6 +80,14 @@ class GameTypes(IntEnum):
     def choices(cls):
         return [(key.value, key.name) for key in cls]
 
+class KuhnTypes(IntEnum):
+    CARD3 = 1
+    CARD4 = 2
+
+    @classmethod
+    def choices(cls):
+        return [(key.value, key.name) for key in cls]
+
 
 class Game(models.Model):
     id = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
@@ -94,16 +102,17 @@ class Game(models.Model):
     player_2 = models.UUIDField(null = True)
     outcome = models.TextField(default = '')
     winner_id = models.UUIDField(null = True)
+    kuhn_type = models.IntegerField(choices = KuhnTypes.choices(), null = False)
     game_type = models.IntegerField(choices = GameTypes.choices(), null = False)
 
 
 class GameAdmin(admin.ModelAdmin):
-    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'is_private', 'created_at', 'player_1', 'player_2', 'winner_id', 'game_type')
-    list_filter = ('is_started', 'is_finished', 'is_failed', 'is_private', 'player_1', 'player_2', 'winner_id', 'game_type')
+    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'is_private', 'created_at', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'game_type')
+    list_filter = ('is_started', 'is_finished', 'is_failed', 'is_private', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'game_type')
 
     readonly_fields = ('is_started', 'is_finished', 'is_failed', 'is_private',
                        'error', 'created_by', 'created_at', 'player_1', 'player_2', 'outcome',
-                       'winner_id', 'game_type')
+                       'winner_id', 'kuhn_type', 'game_type')
 
     class Meta:
         model = Game

@@ -11,6 +11,7 @@ service GameCoordinatorController {
 
 message CreateGameRequest {
     string token = 1;
+    string kuhn_type = 2;
 }
 
 message CreateGameResponse {

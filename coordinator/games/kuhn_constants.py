@@ -1,10 +1,15 @@
+
+# Types of Kuhn games
+CARD3 = 1 # Game with 3 cards
+CARD4 = 2 # Game with 4 cards
+
+# Possible outcomes in any type of Kuhn game
 KQ = "KQ"
 KJ = "KJ"
 QK = "QK"
 QJ = "QJ"
 JK = "JK"
 JQ = "JQ"
-
 AK = "AK"
 AQ = "AQ"
 AJ = "AJ"
@@ -12,20 +17,22 @@ KA = "KA"
 QA = "QA"
 JA = "JA"
 
-POSSIBLE_CARDS = [ 'A', 'K', 'Q', 'J' ]
+KUHN_TYPES = {
+    '3': CARD3,
+    'CARD3': CARD3,
+    '4': CARD4,
+    'CARD4': CARD4
+}
 
-# CARDS_DEALINGS = [KQ, KJ, QK, QJ, JK, JQ]
-CARDS_DEALINGS = [KQ, KJ, QK, QJ, JK, JQ, AK, AQ, AJ, KA, QA, JA]
+POSSIBLE_CARDS = {
+    CARD3: [ 'K', 'Q', 'J' ],
+    CARD4: [ 'A', 'K', 'Q', 'J' ]
+}
 
-CHANCE = "CHANCE"
-
-CHECK = "CHECK"
-CALL = "CALL"
-FOLD = "FOLD"
-BET = "BET"
-NEXT = "NEXT"
-WIN = "WIN"
-DEFEAT = "DEFEAT"
+CARDS_DEALINGS = {
+    CARD3: [ KQ, KJ, QK, QJ, JK, JQ ],
+    CARD4: [ KQ, KJ, QK, QJ, JK, JQ, AK, AQ, AJ, KA, QA, JA ]
+}
 
 RESULTS_MAP = {
     QK: -1,
@@ -41,6 +48,15 @@ RESULTS_MAP = {
     QA: 1,
     JA: 1
 }
+
+CHANCE = "CHANCE"
+CHECK = "CHECK"
+CALL = "CALL"
+FOLD = "FOLD"
+BET = "BET"
+NEXT = "NEXT"
+WIN = "WIN"
+DEFEAT = "DEFEAT"
 
 A = 1
 B = -A
