@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  migration:
+    image: bvdmitri/poker-server-backend
+    command:
+      - /bin/bash
+      - -c
+      - |
+        python manage.py makemigrations --settings=configurations.dev.settings
+        python manage.py makemigrations coordinator --settings=configurations.dev.settings
+        python manage.py migrate --run-syncdb --settings=configurations.dev.settings
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+  django:
+    image: bvdmitri/poker-server-backend
+    command: python manage.py runserver 0.0.0.0:8000 --settings=configurations.dev.settings
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - migration
+      - db
+  grpc:
+    image: bvdmitri/poker-server-backend
+    command: python manage.py grpcrunserver --settings=configurations.dev.settings
+    volumes:
+      - .:/code
+    ports:
+      - "50051:50051"
+    depends_on:
+      - migration
+      - db

@@ -29,6 +29,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

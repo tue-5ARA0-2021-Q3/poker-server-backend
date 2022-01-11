@@ -1,13 +1,16 @@
 import grpc
 import sys
+import queue
 import threading
 
 from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage, KuhnGameLobbyStageMessage, KuhnGameLobbyStageError, \
     KuhnGameLobbyStageCardDeal
+
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, GameTypes
 from coordinator.utilities.card import Card
 from proto.game import game_pb2
+from django.conf import settings
 
 
 class GameCoordinatorService(Service):
@@ -17,7 +20,11 @@ class GameCoordinatorService(Service):
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Create(self, request, context):
         player = Player.objects.get(token = request.token)
-        new_game = Game(created_by = player.token, game_type = GameTypes.PLAYER_PLAYER)
+
+        if player.is_disabled:
+            raise Exception(f'User is disabled')
+
+        new_game = Game(created_by = player.token, game_type = GameTypes.PLAYER_PLAYER, is_private = True)
         instance = GameCoordinatorService.create_game_lobby_instance(new_game.id)
         if instance is not None:
             new_game.save()
@@ -28,10 +35,14 @@ class GameCoordinatorService(Service):
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def FindOrCreate(self, request, context):
         player = Player.objects.get(token = request.token)
+
+        if player.is_disabled:
+            raise Exception(f'User is disabled')
+
         game_candidates = Game.objects.filter(game_type = GameTypes.PLAYER_PLAYER, is_started = False,
-                                              is_failed = False, is_finished = False)
+                                              is_failed = False, is_finished = False, is_private = False)
         if len(game_candidates) == 0:
-            new_game = Game(created_by = player.token, game_type = GameTypes.PLAYER_PLAYER)
+            new_game = Game(created_by = player.token, game_type = GameTypes.PLAYER_PLAYER, is_private = False)
             instance = GameCoordinatorService.create_game_lobby_instance(new_game.id)
             if instance is not None:
                 new_game.save()
@@ -44,6 +55,10 @@ class GameCoordinatorService(Service):
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def List(self, request, context):
         player = Player.objects.get(token = request.token)
+
+        if player.is_disabled:
+            raise Exception(f'User is disabled')
+
         games = Game.objects.filter(created_by = player.token)
         return game_pb2.ListGameResponse(game_ids = list(map(lambda game: str(game.id), games)))
 
@@ -52,8 +67,28 @@ class GameCoordinatorService(Service):
         # First check method's metadata and extract player's secret token and game_id
         metadata = dict(context.invocation_metadata())
         token = metadata['token']
+
+        player = Player.objects.get(token = token)
+
+        if player.is_disabled:
+            raise Exception(f'User is disabled')
+
         game_id = metadata['game_id']
         lobby = GameCoordinatorService.create_game_lobby_instance(game_id)
+
+        lobby.get_logger().info(f'Player {token} is trying to connect to the lobby')
+
+        callback_active = True
+
+        def GRPCConnectionTerminationCallback():
+            if callback_active:
+                if lobby.is_player_registered(token) and not lobby.is_finished():
+                    lobby.get_logger().error(f'Lobby has been terminated before its finished')
+                    lobby.finish(error = f'Lobby terminated before its finished. Another player possible '
+                                         f'has disconnected from the game due to exception.')
+                    GameCoordinatorService.remove_game_lobby_instance(game_id)
+
+        context.add_callback(GRPCConnectionTerminationCallback)
 
         try:
             # We look up for a game object in database
@@ -61,7 +96,8 @@ class GameCoordinatorService(Service):
             game_db = Game.objects.get(id = game_id)
 
             if game_db.is_finished:
-                raise Exception('Game is finished')
+                lobby.get_logger().error(f'Game has been finished already')
+                raise Exception('Game has been finished already')
 
             # First connected player creates a game coordinator
             # Second connected player does not create a new game coordinator, but reuses the same one
@@ -82,12 +118,18 @@ class GameCoordinatorService(Service):
                     lobby.channel.put(KuhnGameLobbyPlayerMessage(token, message.action))
 
                 # Waiting for a response from the game coordinator about another player's decision and available actions
-                response = player_channel.get()
-
+                response = None
+                while (not lobby.is_finished() and response is None) or not player_channel.empty():
+                    try:
+                        response = player_channel.get(timeout = 1)
+                    except queue.Empty:
+                        if lobby.is_finished() and player_channel.empty():
+                            lobby.get_logger().error(f'Lobby has been finished while waiting for response from player.')
+                            return
                 if isinstance(response, KuhnGameLobbyStageCardDeal):
-                    state = f'CARD:{ response.turn_order }:{ response.card }'
+                    state = f'CARD:{response.turn_order}:{response.card}' if settings.LOBBY_REVEAL_CARDS else f'CARD:{response.turn_order}:?'
                     actions = response.actions
-                    card_image = Card(response.card).get_image(0.1).tobytes('raw')
+                    card_image = Card(response.card).get_image().tobytes('raw')
                     yield game_pb2.PlayGameResponse(state = state, available_actions = actions, card_image = card_image)
                 # Normally the game coordinator returns an instance of KuhnGameLobbyStageMessage
                 # It contains 'state' and 'available_actions' fields
@@ -103,28 +145,37 @@ class GameCoordinatorService(Service):
                     lobby.finish(error = response.error)
                     break
 
-            if lobby.is_player_registered(token):
-                GameCoordinatorService.remove_game_lobby_instance(game_id)
-        except grpc.RpcError:
-            pass
-        except KuhnGameLobby.GameLobbyFullError:
-            yield game_pb2.PlayGameResponse(state = f'ERROR: Game lobby is full', available_actions = [])
-        except KuhnGameLobby.PlayerAlreadyExistError:
-            yield game_pb2.PlayGameResponse(state = f'ERROR: Player with the same id is already exist in this lobby',
-                                            available_actions = [])
-        except Exception as e:
-            yield game_pb2.PlayGameResponse(state = f'ERROR:{e}', available_actions = [])
+            callback_active = False
+
             if lobby.is_player_registered(token):
                 GameCoordinatorService.remove_game_lobby_instance(game_id)
 
+        except KuhnGameLobby.GameLobbyFullError:
+            lobby.get_logger().error(f'Connection error. Game lobby is full.')
+            yield game_pb2.PlayGameResponse(state = f'ERROR: Game lobby is full', available_actions = [])
+        except KuhnGameLobby.PlayerAlreadyExistError:
+            lobby.get_logger().error(f'Connection error. Player with the same id is already exist in this lobby')
+            yield game_pb2.PlayGameResponse(state = f'ERROR: Player with the same id is already exist in this lobby',
+                                            available_actions = [])
+        except Exception as e:
+            if len(str(e)) != 0:
+                lobby.get_logger().error(f'Connection error. Unhandled exception: {e}')
+                yield game_pb2.PlayGameResponse(state = f'ERROR: {e}', available_actions = [])
+                if lobby.is_player_registered(token):
+                    GameCoordinatorService.remove_game_lobby_instance(game_id)
+
+        callback_active = False
+
     @staticmethod
     def create_game_lobby_instance(game_id: str) -> KuhnGameLobby:
+        game_id = str(game_id)
         lobby = None
         with GameCoordinatorService.games_lock:
             game_lobbies = list(filter(lambda game: game.game_id == game_id, GameCoordinatorService.game_lobbies))
             if len(game_lobbies) == 0:
                 lobby = KuhnGameLobby(game_id)
                 GameCoordinatorService.game_lobbies.append(lobby)
+                lobby.get_logger().info(f'Lobby {game_id} has been added to GameCoordinatorService')
             else:
                 lobby = game_lobbies[0]
         return lobby
