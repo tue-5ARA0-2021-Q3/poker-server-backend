@@ -4,7 +4,18 @@ QK = "QK"
 QJ = "QJ"
 JK = "JK"
 JQ = "JQ"
-CARDS_DEALINGS = [KQ, KJ, QK, QJ, JK, JQ]
+
+AK = "AK"
+AQ = "AQ"
+AJ = "AJ"
+KA = "KA"
+QA = "QA"
+JA = "JA"
+
+POSSIBLE_CARDS = [ 'A', 'K', 'Q', 'J' ]
+
+# CARDS_DEALINGS = [KQ, KJ, QK, QJ, JK, JQ]
+CARDS_DEALINGS = [KQ, KJ, QK, QJ, JK, JQ, AK, AQ, AJ, KA, QA, JA]
 
 CHANCE = "CHANCE"
 
@@ -22,7 +33,13 @@ RESULTS_MAP = {
     JQ: -1,
     KQ: 1,
     KJ: 1,
-    QJ: 1
+    QJ: 1,
+    AK: -1,
+    AQ: -1,
+    AJ: -1,
+    KA: 1,
+    QA: 1,
+    JA: 1
 }
 
 A = 1

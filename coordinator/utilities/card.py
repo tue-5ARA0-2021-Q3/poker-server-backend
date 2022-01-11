@@ -3,10 +3,10 @@ import random
 from matplotlib import font_manager
 from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
-
+from coordinator.games.kuhn_constants import POSSIBLE_CARDS
 
 class Card:
-    RANKS = ['J', 'Q', 'K']
+    RANKS = POSSIBLE_CARDS
     FONTS = [
         font_manager.findfont(font_manager.FontProperties(family = 'sans-serif', style = 'normal', weight = 'normal')),
         font_manager.findfont(font_manager.FontProperties(family = 'sans-serif', style = 'italic', weight = 'normal')),
