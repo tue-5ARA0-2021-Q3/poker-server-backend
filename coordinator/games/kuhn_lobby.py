@@ -137,7 +137,6 @@ class KuhnGameLobby(object):
             if os.path.isfile(bot_exec):
                 print('Bot found: ', folder)
                 LobbyBots.append(bot_exec)
-        
 
     class GameLobbyFullError(Exception):
         pass
@@ -251,6 +250,8 @@ class KuhnGameLobby(object):
                         raise Exception('Could not find a bot player to play against')
                     bot_player = bot_players[0]
                     bot_token  = str(bot_player.token)
+                    if len(KuhnGameLobby.LobbyBots) == 0:
+                        raise Exception('Server has no bot implementations available.')
                     bot_exec   = str(random.choice(KuhnGameLobby.LobbyBots))
                     self._lobby_bot_thread = threading.Thread(target = game_bot, args = (self, bot_token, bot_exec, KuhnGameLobby.BotCreationDelay))
                     self._lobby_bot_thread.start()
