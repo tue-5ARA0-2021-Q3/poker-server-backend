@@ -17,6 +17,7 @@ from django.contrib import admin
 from django.urls import path
 
 from pages.views import home_view, games_view, game_view, leaderboard_view, about_view
+from pages.api import game_counter
 
 from coordinator.handlers import game_coordinator_handlers
 
@@ -27,8 +28,9 @@ urlpatterns = [
     path('game/<str:game_id>/', game_view, name = 'game'),
     path('leaderboard/', leaderboard_view, name = 'leaderboard'),
     path('about/', about_view, name = 'about'),
-
     path('admin/', admin.site.urls),
+
+    path('api/game_counter', game_counter)
 ]
 
 

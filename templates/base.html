@@ -3,10 +3,11 @@
 <head>
     <link rel="stylesheet" type="text/css"
           href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
 </head>
 <body>
-<div class="ui container" style="margin-top: 2em;">
     {% include "navbar.html" %}
+<div class="ui container" style="margin-top: 2em;">
     {% block content %}
         Replace block content
     {% endblock content %}
