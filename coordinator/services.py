@@ -17,19 +17,7 @@ from django.conf import settings
 
 class GameCoordinatorService(Service):
     game_lobbies = []
-    game_bots = []
     games_lock = threading.Lock()
-
-    def __init__(self):
-        # Here we check is bots are enabled in server settings
-        # Routine picks up `BOT_FOLDER` setting variable, iterates over subfolders,
-        # checks for main.py, and adds bot executables paths in `GameCoordinatorService.game_bots`
-        if settings.ALLOW_BOTS:
-            for folder in os.listdir(settings.BOT_FOLDER):
-                bot_exec = os.path.join(settings.BOT_FOLDER, folder, 'main.py')
-                if os.path.isfile(bot_exec):
-                    print('Bot found: ', folder)
-                    GameCoordinatorService.game_bots.append(bot_exec)
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Create(self, request, context):
@@ -40,7 +28,7 @@ class GameCoordinatorService(Service):
 
         kuhn_type = KuhnGameLobby.resolve_kuhn_type(request.kuhn_type)
         new_game  = Game(created_by = player.token, player_type = PlayerTypes.PLAYER_PLAYER, kuhn_type = kuhn_type, is_private = True)
-        instance  = GameCoordinatorService.create_game_lobby_instance(new_game.id, new_game.kuhn_type)
+        instance  = GameCoordinatorService.find_or_create_game_lobby_instance(new_game)
         if instance is not None:
             new_game.save()
             return game_pb2.CreateGameResponse(id = str(new_game.id))
@@ -59,7 +47,7 @@ class GameCoordinatorService(Service):
                                               is_failed = False, is_finished = False, is_private = False)
         if len(game_candidates) == 0:
             new_game = Game(created_by = player.token, player_type = PlayerTypes.PLAYER_PLAYER, kuhn_type = kuhn_type, is_private = False)
-            instance = GameCoordinatorService.create_game_lobby_instance(new_game.id, new_game.kuhn_type)
+            instance = GameCoordinatorService.find_or_create_game_lobby_instance(new_game)
             if instance is not None:
                 new_game.save()
                 return game_pb2.ListGameResponse(game_ids = [str(new_game.id)])
@@ -91,9 +79,11 @@ class GameCoordinatorService(Service):
         if player.is_disabled:
             raise Exception(f'User is disabled')
 
-        lobby, game_id = GameCoordinatorService.create_game_lobby_instance(metadata['game_id'], kuhn_type)
+        game    = GameCoordinatorService.find_or_create_game_instance(token, metadata['game_id'], kuhn_type)
+        lobby   = GameCoordinatorService.find_or_create_game_lobby_instance(game)
+        game_id = game.id
 
-        lobby.get_logger().info(f'Player {token} is trying to connect to the lobby')
+        lobby.get_logger().info(f'Player {token} is trying to connect to the lobby with game id {game_id}')
 
         callback_active = True
 
@@ -183,37 +173,48 @@ class GameCoordinatorService(Service):
 
         callback_active = False
 
+    @staticmethod 
+    def find_or_create_game_instance(token: str, game_id: str, kuhn_type: int) -> Game:
+        if game_id == 'bot':
+            bot_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_BOT, kuhn_type = kuhn_type, is_private = True)
+            bot_game.save()
+            return bot_game
+        # This behaviour depends on provided `token`. 
+        # Real players attemt to find `PLAYER_PLAYER` games only
+        # Bot players attempt to find `PLAYER_BOT` games only
+        player      = Player.objects.get(token = token)
+        player_type = PlayerTypes.PLAYER_PLAYER if not player.is_bot else PlayerTypes.PLAYER_BOT
+        candidates = Game.objects.filter(id = game_id, player_type = player_type, kuhn_type = kuhn_type)
+        if len(candidates) != 0:
+            return candidates[0]
+        new_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_PLAYER, kuhn_type = kuhn_type, is_private = False)
+        new_game.save()
+        return new_game
+
     @staticmethod
-    def create_game_lobby_instance(game_id: str, kuhn_type: int) -> KuhnGameLobby:
+    def find_or_create_game_lobby_instance(game: Game) -> KuhnGameLobby:
         # This methods does not create a new game instance if one exists already
-        # Always creates a new lobby if `game_id` is equal to `bot` and assigns a callback, when at least one player connects to a correspodning BOT lobby
-        game_id = str(game_id)
-        lobby = None
+        game_id = str(game.id)
+        kuhn_type = game.kuhn_type
+        player_type = game.player_type
+
         with GameCoordinatorService.games_lock:
-            if game_id == 'bot':
-                print(1)
-            else:
-                game_lobbies = list(filter(lambda game: game.game_id == game_id and game.player_type == PlayerTypes.PLAYER_PLAYER, GameCoordinatorService.game_lobbies))
-                if len(game_lobbies) == 0:
-                    lobby = KuhnGameLobby(game_id, kuhn_type, PlayerTypes.PLAYER_PLAYER)
-                    GameCoordinatorService.game_lobbies.append(lobby)
-                    lobby.get_logger().info(f'Lobby {game_id} of type {kuhn_type} has been added to GameCoordinatorService')
-                else:
-                    lobby = game_lobbies[0]
-        if lobby.kuhn_type != kuhn_type:
-            raise Exception(f'Lobby {game_id} exists but it has a different Kuhn poker game type.')
-        return (lobby, game_id)
+            game_lobbies = list(filter(lambda game: game.game_id == game_id, GameCoordinatorService.game_lobbies))
+            if len(game_lobbies) != 0:
+                return game_lobbies[0]
+
+            new_lobby = KuhnGameLobby(game_id, kuhn_type, player_type)
+            GameCoordinatorService.game_lobbies.append(new_lobby)
+            new_lobby.get_logger().info(f'Lobby {game_id} of type {kuhn_type} has been added to GameCoordinatorService')
+            return new_lobby
 
     @staticmethod
     def get_game_lobby_instance(game_id: str) -> KuhnGameLobby:
-        lobby = None
         with GameCoordinatorService.games_lock:
             game_lobbies = list(filter(lambda game: game.game_id == game_id, GameCoordinatorService.game_lobbies))
-            if len(game_lobbies) == 0:
-                raise Exception(f'There is no game lobby instance with id: {game_id}')
-            else:
-                lobby = game_lobbies[0]
-        return lobby
+            if len(game_lobbies) != 0:
+                return game_lobbies[0]
+        raise Exception(f'There is no game lobby instance with id: {game_id}')
 
     @staticmethod
     def remove_game_lobby_instance(game_id: str):
