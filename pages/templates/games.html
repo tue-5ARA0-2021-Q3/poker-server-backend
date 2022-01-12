@@ -19,21 +19,21 @@
             <table class="ui celled table">
                 <thead>
                 <tr>
-                    <th>Game ID</th>
                     <th>Created at</th>
                     <th>Player 1</th>
                     <th>Player 2</th>
                     <th>Winner</th>
+                    <th>Game logs</th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for game in last_games %}
                     <tr>
-                        <td data-label="id"><a href="/game/{{ game.id }}/" rel="noopener">{{ game.id }}</a></td>
                         <td data-label="created_at">{{ game.created_at }}</td>
                         <td data-label="player_1">{{ game.player1.name }}</td>
                         <td data-label="player_2">{{ game.player2.name }}</td>
                         <td data-label="winner_id">{{ game.winner.name }}</td>
+                        <td data-label="id"><a href="/game/{{ game.id }}/" rel="noopener">Open logs</a></td>
                     </tr>
                 {% endfor %}
                 </tbody>

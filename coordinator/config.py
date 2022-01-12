@@ -19,7 +19,7 @@ class CoordinatorConfig(AppConfig):
             if settings.ALLOW_BOTS:
                 bot_players = Player.objects.filter(is_bot = True)
                 if len(bot_players) == 0:
-                    bot_player = Player(email = 'bot@bot', is_bot = True)
+                    bot_player = Player(email = 'bot@bot', name = 'Bot (extreme hard)', is_bot = True)
                     bot_player.save()
                     print(f'Bot player token: {bot_player.token}')
 

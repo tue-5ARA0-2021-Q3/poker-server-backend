@@ -24,6 +24,11 @@ KUHN_TYPES = {
     'CARD4': CARD4
 }
 
+KUHN_TYPE_TO_STR = {
+    CARD3: '3',
+    CARD4: '4'
+}
+
 POSSIBLE_CARDS = {
     CARD3: [ 'K', 'Q', 'J' ],
     CARD4: [ 'A', 'K', 'Q', 'J' ]

@@ -9,7 +9,7 @@ from typing import List, Union
 from django.conf import settings
 
 from coordinator.games.kuhn_game import KuhnRootChanceGameState
-from coordinator.games.kuhn_constants import KUHN_TYPES, CARDS_DEALINGS, POSSIBLE_CARDS
+from coordinator.games.kuhn_constants import KUHN_TYPE_TO_STR, KUHN_TYPES, CARDS_DEALINGS, POSSIBLE_CARDS
 from coordinator.models import Game, Player, PlayerTypes
 from coordinator.utilities.logger import GameActionsLogger
 
@@ -412,7 +412,7 @@ def game_bot(lobby: KuhnGameLobby, bot_token: str, bot_exec: str, exec_delay: in
     try: 
         lobby.get_logger().info(f'Executing bot for lobby {lobby.game_id} in {exec_delay} seconds')
         time.sleep(exec_delay)
-        subprocess.run([ 'python', bot_exec, '--play', lobby.game_id, '--token', bot_token ], check = True, capture_output = True)
+        subprocess.run([ 'python', bot_exec, '--play', lobby.game_id, '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[lobby.kuhn_type] ], check = True, capture_output = True)
         lobby.get_logger().info(f'Bot in lobby {lobby.game_id} exited.')
     except Exception as e:
         lobby.finish(error = str(e))
