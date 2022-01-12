@@ -36,10 +36,7 @@ def fetch_game_info(game):
 
 
 def games_view(request, *args, **kwargs):
-    last_games = Game.objects.all().order_by('-created_at')[:50]
-    return render(request, "games.html", {
-        'last_games': list(map(fetch_game_info, last_games))
-    })
+    return render(request, "games.html")
 
 
 def game_view(request, *args, **kwargs):

@@ -1,43 +1,81 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="ui raised segments">
-        <h3 class="ui top attached header">Last {{ last_games | length }} played games</h3>
-        <div class="ui blue segment">
-            <div class="ui grid">
-                <div class="ui twelve wide column">
-                    <div class="ui input fluid focus">
-                        <input type="text" placeholder="Search game by UUID">
-                    </div>
-                </div>
-                <div class="ui four wide column">
-                    <div class="ui blue fluid button">Search</div>
+    <div id="games">
+        <div class="ui segment" v-if="!initialized">
+            <div class="ui active centered inline loader"></div>
+        </div>
+        <div v-else>
+        <div class="ui large header">Last [[ lastGames.length ]] played games</div>
+        {% comment %} <div class="ui grid">
+            <div class="ui twelve wide column">
+                <div class="ui input fluid focus">
+                    <input type="text" placeholder="Search game by UUID">
                 </div>
             </div>
-        </div>
-        <div class="ui blue segment">
-            <table class="ui celled table">
-                <thead>
-                <tr>
-                    <th>Created at</th>
-                    <th>Player 1</th>
-                    <th>Player 2</th>
-                    <th>Winner</th>
-                    <th>Game logs</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for game in last_games %}
-                    <tr>
-                        <td data-label="created_at">{{ game.created_at }}</td>
-                        <td data-label="player_1">{{ game.player1.name }}</td>
-                        <td data-label="player_2">{{ game.player2.name }}</td>
-                        <td data-label="winner_id">{{ game.winner.name }}</td>
-                        <td data-label="id"><a href="/game/{{ game.id }}/" rel="noopener">Open logs</a></td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+            <div class="ui four wide column">
+                <div class="ui blue fluid button">Search</div>
+            </div>
+        </div> {% endcomment %}
+        <table class="ui celled compact table">
+            <thead>
+            <tr>
+                <th>Played at</th>
+                <th>Player 1</th>
+                <th>Player 2</th>
+                <th>Winner</th>
+                <th>Game logs</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="game in lastGames" :key="game.id">
+                <td data-label="created_at">[[ game.created_at ]]</td>
+                <td data-label="player_1">[[ playerName(game.player_1) ]]</td>
+                <td data-label="player_2">[[ playerName(game.player_2) ]]</td>
+                <td data-label="winner_id">[[ playerName(game.winner_id) ]]</td>
+                <td data-label="id"><a v-bind:href="/game/ + game.id" rel="noopener">Open logs</a></td>
+            </tr>
+            </tbody>
+        </table>
         </div>
     </div>
+    <script>
+        var app = new Vue({
+            delimiters: ["[[", "]]"],
+            el: '#games',
+            data: {
+              initialized: false,
+              lastGames: [],
+              players: [],
+              timer: undefined
+            },
+            created: function() {
+                this.fetchLastGames()
+                this.timer = setInterval(() => this.fetchLastGames(), 5_000)
+            },
+            methods: {
+                fetchLastGames: function() {
+                    fetch('{{ request.scheme }}://{{ request.get_host }}/api/last_games')
+                        .then(response => response.json())
+                        .then((data) => {
+                            this.lastGames   = data.games
+                            this.players     = data.players
+                            this.initialized = true
+                        })
+                },
+                playerName: function(id) {
+                    if (id) {
+                        return this.players[id].name
+                    } else {
+                        return ''
+                    }
+                }
+            },
+            destroyed: function() {
+                if (this.timer) {
+                    clearInterval(this.timer)
+                }
+            }
+        })
+    </script>
 {% endblock content %}
