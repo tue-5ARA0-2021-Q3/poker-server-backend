@@ -175,15 +175,17 @@ class GameCoordinatorService(Service):
 
     @staticmethod 
     def find_or_create_game_instance(token: str, game_id: str, kuhn_type: int) -> Game:
-        if game_id == 'bot':
-            bot_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_BOT, kuhn_type = kuhn_type, is_private = True)
-            bot_game.save()
-            return bot_game
-        # This behaviour depends on provided `token`. 
+        # Behaviour depends on provided `token`. 
         # Real players attemt to find `PLAYER_PLAYER` games only
         # Bot players attempt to find `PLAYER_BOT` games only
         player      = Player.objects.get(token = token)
         player_type = PlayerTypes.PLAYER_PLAYER if not player.is_bot else PlayerTypes.PLAYER_BOT
+        if game_id == 'bot' and player.is_bot:
+            raise Exception('Bots cannot play agains bots')
+        elif game_id == 'bot':
+            bot_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_BOT, kuhn_type = kuhn_type, is_private = True)
+            bot_game.save()
+            return bot_game
         candidates = Game.objects.filter(id = game_id, player_type = player_type, kuhn_type = kuhn_type)
         if len(candidates) != 0:
             return candidates[0]
