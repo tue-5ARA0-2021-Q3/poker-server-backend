@@ -72,7 +72,7 @@ class PlayerAdmin(admin.ModelAdmin):
         model = Player
 
 
-class GameTypes(IntEnum):
+class PlayerTypes(IntEnum):
     PLAYER_BOT = 1
     PLAYER_PLAYER = 2
 
@@ -103,16 +103,16 @@ class Game(models.Model):
     outcome = models.TextField(default = '')
     winner_id = models.UUIDField(null = True)
     kuhn_type = models.IntegerField(choices = KuhnTypes.choices(), null = False)
-    game_type = models.IntegerField(choices = GameTypes.choices(), null = False)
+    player_type = models.IntegerField(choices = PlayerTypes.choices(), null = False)
 
 
 class GameAdmin(admin.ModelAdmin):
-    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'is_private', 'created_at', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'game_type')
-    list_filter = ('is_started', 'is_finished', 'is_failed', 'is_private', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'game_type')
+    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'is_private', 'created_at', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'player_type')
+    list_filter = ('is_started', 'is_finished', 'is_failed', 'is_private', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'player_type')
 
     readonly_fields = ('is_started', 'is_finished', 'is_failed', 'is_private',
                        'error', 'created_by', 'created_at', 'player_1', 'player_2', 'outcome',
-                       'winner_id', 'kuhn_type', 'game_type')
+                       'winner_id', 'kuhn_type', 'player_type')
 
     class Meta:
         model = Game

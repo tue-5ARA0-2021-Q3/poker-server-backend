@@ -132,11 +132,13 @@ class KuhnGameLobby(object):
     class PlayerDisconnected(Exception):
         pass
 
-    def __init__(self, game_id: str, kuhn_type: int):
+    def __init__(self, game_id: str, kuhn_type: int, player_type: int):
         self.lock = threading.Lock()
         self.game_id = game_id
         self.rounds = []
         self.channel = queue.Queue()
+        self.kuhn_type = kuhn_type
+        self.player_type = player_type
 
         # private fields
         self._closed = threading.Event()
@@ -146,8 +148,6 @@ class KuhnGameLobby(object):
         self._players = {}
         self._player_opponent = {}
         self._logger = GameActionsLogger(game_id)
-
-        self._kuhn_type = kuhn_type
 
     def get_players(self) -> List[KuhnGameLobbyPlayer]:
         return list(self._players.values())
@@ -182,14 +182,11 @@ class KuhnGameLobby(object):
     def get_logger(self):
         return self._logger
 
-    def get_kuhn_type(self):
-        return self._kuhn_type
-
     def get_valid_card_ranks(self):
-        return POSSIBLE_CARDS[self.get_kuhn_type()]
+        return POSSIBLE_CARDS[self.kuhn_type]
 
     def get_card_dealings(self):
-        return CARDS_DEALINGS[self.get_kuhn_type()]
+        return CARDS_DEALINGS[self.kuhn_type]
 
     def start(self):
         # First player which hits this function starts a separate thread with a game coordinator
