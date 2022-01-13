@@ -98,6 +98,24 @@ class GameCoordinatorService(Service):
 
         context.add_callback(GRPCConnectionTerminationCallback)
 
+        # In general event flow is the following
+        # Both players first send 'CONNECT' event which server simply ignores, because it register them anyway on first connect attempt
+        # Once both players have been connected lobby sends an initial `GameStart` event (see `game_lobby_coordinator` function)
+        # `GameStart` event triggers both players to request list of their available actions
+        #    - in the beggining both players receive only one available actions: request a new round
+        # When both players requested a new round the lobby randomly decides who goes first and send a `CardDeal` event
+        # `CardDeal` event triggers both players to request list of their available actions again
+        #    - list of available actions at this moment depends on play order
+        #    - first player in order receives real actions, like BET or CHECK
+        #    - second player in order simply receives WAIT
+        # Player commit their actions in a ping-pong manner with `NextAction` event
+        # Once game round reaches `terminal` stage server sends `RoundResult` event
+        # `RoundResult` event triggers both players to request a new round
+        #     - if both players have enough bank to continue server replies with a `CardDeal` event
+        #     - otherwise server replies with a `GameResult` event
+        # `GameResult` event triggers both players to request list of their available actions again
+        #     - in tournament mode players may receive `WAIT` event and wait for their next game
+        #     - in non-tournament mode players always receive `Close` event at this stage
         try:
             # We look up for a game object in database
             # It should exist at this point otherwise function throws an error and game ends immediately
