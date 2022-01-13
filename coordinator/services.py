@@ -79,7 +79,7 @@ class GameCoordinatorService(Service):
         if player.is_disabled:
             raise Exception(f'User is disabled')
 
-        game    = GameCoordinatorService.find_or_create_game_instance(token, metadata['game_id'], kuhn_type)
+        game    = GameCoordinatorService.find_game_instance(token, metadata['game_id'], kuhn_type)
         lobby   = GameCoordinatorService.find_or_create_game_lobby_instance(game)
         game_id = game.id
 
@@ -174,24 +174,44 @@ class GameCoordinatorService(Service):
         callback_active = False
 
     @staticmethod 
-    def find_or_create_game_instance(token: str, game_id: str, kuhn_type: int) -> Game:
+    def find_game_instance(token: str, game_id: str, kuhn_type: int) -> Game:
         # Behaviour depends on provided `token`. 
         # Real players attemt to find `PLAYER_PLAYER` games only
         # Bot players attempt to find `PLAYER_BOT` games only
         player      = Player.objects.get(token = token)
-        player_type = PlayerTypes.PLAYER_PLAYER if not player.is_bot else PlayerTypes.PLAYER_BOT
-        if game_id == 'bot' and player.is_bot:
-            raise Exception('Bots cannot play agains bots')
-        elif game_id == 'bot':
+        # First we check if requested game is a game against a bot
+        # In this case we always create a new private game and will add a bot to it later on
+        if game_id == 'bot':
+            if player.is_bot:
+                raise Exception('Bots cannot play agains bots')
             bot_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_BOT, kuhn_type = kuhn_type, is_private = True)
             bot_game.save()
             return bot_game
-        candidates = Game.objects.filter(id = game_id, player_type = player_type, kuhn_type = kuhn_type)
-        if len(candidates) != 0:
-            return candidates[0]
-        new_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_PLAYER, kuhn_type = kuhn_type, is_private = False)
-        new_game.save()
-        return new_game
+        # Second we check if requested game was a random game
+        # In this case we check if there are some public pending games available and do nothing if not
+        # Random games can be played only with real players, but Kuhn type game should match
+        elif game_id == 'random':
+            if player.is_bot:
+                raise Exception('Bots cannot play random games')
+            # If we can find a public unfinished game we simply return it
+            # This procedure assumes there are no concurrent connection, however 
+            # in case of concurrent connections one of the connection shouldnot have enough time to connect
+            public_games = Game.objects.filter(player_type = PlayerTypes.PLAYER_PLAYER, kuhn_type = kuhn_type, is_started = False,
+                                              is_failed = False, is_finished = False, is_private = False)
+            if len(public_games) != 0:
+                return public_games[0]
+            else:
+                # In case if game_id was random and there are no games available at the moment we create a new one
+                new_public_game = Game(created_by = token, player_type = PlayerTypes.PLAYER_PLAYER, kuhn_type = kuhn_type, is_private = False)
+                new_public_game.save()
+                return new_public_game
+        else:
+            # Last case should be a valid game_id otherwise we return an error
+            player_type = PlayerTypes.PLAYER_PLAYER if not player.is_bot else PlayerTypes.PLAYER_BOT
+            candidates = Game.objects.filter(id = game_id, player_type = player_type, kuhn_type = kuhn_type)
+            if len(candidates) != 0:
+                return candidates[0]   
+            raise Exception('Game instance with UUID { game_id } has not been found') 
 
     @staticmethod
     def find_or_create_game_lobby_instance(game: Game) -> KuhnGameLobby:
