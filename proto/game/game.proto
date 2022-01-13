@@ -34,10 +34,12 @@ message PlayGameResponse {
         Nothing = 0;
         CardDeal = 1;
         NextAction = 2;
-        RoundResult = 3;
-        GameResult = 4;
-        Close = 5;
-        Error = 6;
+        GameStart = 3;
+        RoundResult = 4;
+        GameResult = 5;
+        Close = 6;
+        UpdateGameId = 7;
+        Error = 8;
     }
     PlayGameResponseEvent event = 1;
     repeated string available_actions = 2;

@@ -120,6 +120,14 @@ class GameCoordinatorService(Service):
 
             # We run this inner loop until we have some messages from connected player
             for message in request:
+
+                # In case if lobby has been finished, but player requests a list of available actions just 
+                # send a `Close` disconnect event and break out of the loop since we do not expect any other message after that
+                if message.action == 'AVAILABLE_ACTIONS' and lobby.is_finished():
+                    lobby.get_logger().info(f'Sending disconnect event to the player { token }')
+                    yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Close)
+                    break
+
                 # Check against utility messages: 'CONNECT' and 'WAIT'
                 # In principle this messages do nothing, but can be used to initiate a new game or to wait for another player action
                 if message.action != 'CONNECT' and message.action != 'WAIT':
@@ -136,12 +144,13 @@ class GameCoordinatorService(Service):
                         # First player in order gets a list of possible moves
                         # Second player in order gets an only one command to wait for a move from the first player
                         if isinstance(response, KuhnGameLobbyMessage):
-                            pass
+                            if response.event == KuhnGameLobbyEvents.GameStart:
+                                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.GameStart)
                             # In case of a `CardDeal` event we expect lobby to send
                             # - turn_order
                             # - card
                             # - actions 
-                            if response.event == KuhnGameLobbyEvents.CardDeal:
+                            elif response.event == KuhnGameLobbyEvents.CardDeal:
                                 turn_order = response.data['turn_order']
                                 card_rank  = response.data['card'] if settings.LOBBY_REVEAL_CARDS else '?'
                                 actions    = response.data['actions']

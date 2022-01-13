@@ -16,11 +16,13 @@ from coordinator.utilities.logger import GameActionsLogger
 from enum import Enum
 
 class KuhnGameLobbyEvents(Enum):
-    CardDeal = 1
-    NextAction = 2
-    RoundResult = 3
-    GameResult = 4
-    Error = 5
+    GameStart = 1
+    CardDeal = 2
+    NextAction = 3
+    RoundResult = 4
+    GameResult = 5
+    Close = 6
+    Error = 7
 
 # Lobby communicates with a connected player with `KuhnGameLobbyMessage` object
 # It has an `event` field (see `KuhnGameLobbyEvents`) and a corresponding `data` object in a form of a dictionary
@@ -421,12 +423,11 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
         # Throws an error if second player did not connect in some reasonable amount of time (check wait_for_players() function)
         lobby.wait_for_players()
 
-        # Once both players are connected lobby creates an initial round and
-        # starts this round automatically without waiting for players confirmation
-        # On next rounds game coordinator will wait for both players to start a new round explicitly via 'START' action
-        current_round = lobby.create_new_round()
         for player in lobby.get_players():
-            lobby.start_new_round(player.player_id)
+            player.send_message(KuhnGameLobbyMessage(KuhnGameLobbyEvents.GameStart))
+
+        # Server creates a new round, but both player must send a `ROUND` action first to accept the invitation
+        current_round = lobby.create_new_round()
 
         # We run an inner cycle until lobby is closed or to process last messages after lobby has been closed
         while not lobby.is_finished() or not lobby.channel.empty():
@@ -437,7 +438,7 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
 
                 # First we check if the message is about to start a new round
                 # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
-                if message.action == 'START':
+                if message.action == 'ROUND':
                     if lobby.check_players_bank():
                         lobby.start_new_round(message.player_id)
                     else:
@@ -463,7 +464,6 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                             inf_set = current_round.stage.public_inf_set(), 
                             actions = [ 'WAIT' ]
                         ))
-                    pass
                 # Wait is an utility message
                 elif message.action == 'WAIT':
                     continue
