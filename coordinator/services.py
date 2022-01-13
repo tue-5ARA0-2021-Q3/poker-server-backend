@@ -3,10 +3,11 @@ import grpc
 import sys
 import os
 import queue
+import traceback
 import threading
+from coordinator import models
 
-from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyPlayerMessage, KuhnGameLobbyStageMessage, KuhnGameLobbyStageError, \
-    KuhnGameLobbyStageCardDeal
+from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, KuhnGameLobbyPlayerMessage
 
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, PlayerTypes
@@ -128,29 +129,65 @@ class GameCoordinatorService(Service):
                 response = None
                 while (not lobby.is_finished() and response is None) or not player_channel.empty():
                     try:
-                        response = player_channel.get(timeout = 1)
+                        response = player_channel.get(timeout = 5)
+                        # If response is a `KuhnGameLobbyStageCardDeal` we generate a new card based on its rank 
+                        # and send the corresponding turn order, card rank (if enabled in server settings) and the image itself in a form of raw bytes
+                        # Note that depending on the turn order the list of available actions may be different
+                        # First player in order gets a list of possible moves
+                        # Second player in order gets an only one command to wait for a move from the first player
+                        if isinstance(response, KuhnGameLobbyMessage):
+                            pass
+                            # In case of a `CardDeal` event we expect lobby to send
+                            # - turn_order
+                            # - card
+                            # - actions 
+                            if response.event == KuhnGameLobbyEvents.CardDeal:
+                                turn_order = response.data['turn_order']
+                                card_rank  = response.data['card'] if settings.LOBBY_REVEAL_CARDS else '?'
+                                actions    = response.data['actions']
+                                card_image = Card(response.data['card'], lobby.get_valid_card_ranks()).get_image().tobytes('raw')
+                                yield game_pb2.PlayGameResponse(
+                                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.CardDeal, 
+                                    available_actions = actions, 
+                                    turn_order = turn_order,
+                                    card_rank  = card_rank,
+                                    card_image = card_image
+                                )
+                            # In case of a `NextAction` event we expect lobby to send
+                            # - inf_set
+                            # - actions
+                            elif response.event == KuhnGameLobbyEvents.NextAction:                                
+                                yield game_pb2.PlayGameResponse(
+                                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.NextAction,
+                                    inf_set           = response.data['inf_set'],
+                                    available_actions = response.data['actions'] 
+                                )
+                            # In case of a `RoundResult` event we expect lobby to send
+                            # - evaluation
+                            # - inf_set
+                            elif response.event == KuhnGameLobbyEvents.RoundResult:
+                                yield game_pb2.PlayGameResponse(
+                                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.RoundResult,
+                                    round_evaluation = response.data['evaluation'],
+                                    inf_set          = response.data['inf_set']
+                                )
+                            # In case of a `GameResult` event we expect lobby to send
+                            # - game_result
+                            elif response.event == KuhnGameLobbyEvents.GameResult:
+                                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.GameResult, game_result = response.data['game_result'])
+                            # In case of a `GameResult` event we expect lobby to send
+                            # - error
+                            elif response.event == KuhnGameLobbyEvents.Error:
+                                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = response.data['error'])
+                                lobby.finish(error = response.data['error'])
+                            else:
+                                raise Exception(f'Unexpected event type from lobby response: { response }')
+                        else:
+                            raise Exception(f'Unexpected response type from lobby: { response }')
                     except queue.Empty:
                         if lobby.is_finished() and player_channel.empty():
                             lobby.get_logger().error(f'Lobby has been finished while waiting for response from player.')
                             return
-                if isinstance(response, KuhnGameLobbyStageCardDeal):
-                    state = f'CARD:{response.turn_order}:{response.card}' if settings.LOBBY_REVEAL_CARDS else f'CARD:{response.turn_order}:?'
-                    actions = response.actions
-                    card_image = Card(response.card, lobby.get_valid_card_ranks()).get_image().tobytes('raw')
-                    yield game_pb2.PlayGameResponse(state = state, available_actions = actions, card_image = card_image)
-                # Normally the game coordinator returns an instance of KuhnGameLobbyStageMessage
-                # It contains 'state' and 'available_actions' fields
-                # Server redirects this information to a player's agent and will wait for its decision in a next message
-                elif isinstance(response, KuhnGameLobbyStageMessage):
-                    state = response.state
-                    actions = response.actions
-                    yield game_pb2.PlayGameResponse(state = state, available_actions = actions)
-                # It might happen that some error has been occurred
-                # In this case we just notify player's agent and close the lobby
-                elif isinstance(response, KuhnGameLobbyStageError):
-                    yield game_pb2.PlayGameResponse(state = f'ERROR:{response.error}', available_actions = [])
-                    lobby.finish(error = response.error)
-                    break
 
             callback_active = False
 
@@ -159,15 +196,15 @@ class GameCoordinatorService(Service):
 
         except KuhnGameLobby.GameLobbyFullError:
             lobby.get_logger().error(f'Connection error. Game lobby is full.')
-            yield game_pb2.PlayGameResponse(state = f'ERROR: Game lobby is full', available_actions = [])
+            yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = 'Gamme lobby is full')
         except KuhnGameLobby.PlayerAlreadyExistError:
             lobby.get_logger().error(f'Connection error. Player with the same id is already exist in this lobby')
-            yield game_pb2.PlayGameResponse(state = f'ERROR: Player with the same id is already exist in this lobby',
-                                            available_actions = [])
+            yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = 'Player with the same id is already exist in this lobby')
         except Exception as e:
             if len(str(e)) != 0:
-                lobby.get_logger().error(f'Connection error. Unhandled exception: {e}')
-                yield game_pb2.PlayGameResponse(state = f'ERROR: {e}', available_actions = [])
+                lobby.get_logger().error(f'Connection error. Unhandled exception: { e }.\n')
+                traceback.print_exc()
+                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = f'Unexpected error on server side: { e }. Please report.\n')
                 if lobby.is_player_registered(token):
                     GameCoordinatorService.remove_game_lobby_instance(game_id)
 

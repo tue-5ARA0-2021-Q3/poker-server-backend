@@ -78,7 +78,7 @@ class KuhnPlayerMoveGameState(GameStateBase):
     def inf_set(self):
         return self._information_set
 
-    def secret_inf_set(self):
+    def public_inf_set(self):
         return self._information_set[4:]
 
     def is_terminal(self):

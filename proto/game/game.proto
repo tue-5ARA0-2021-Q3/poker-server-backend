@@ -30,7 +30,25 @@ message PlayGameRequest {
 }
 
 message PlayGameResponse {
-    string state = 1;
+    enum PlayGameResponseEvent {
+        Nothing = 0;
+        CardDeal = 1;
+        NextAction = 2;
+        RoundResult = 3;
+        GameResult = 4;
+        Close = 5;
+        Error = 6;
+    }
+    PlayGameResponseEvent event = 1;
     repeated string available_actions = 2;
-    bytes card_image = 3;
+
+    int32 turn_order = 4;
+    string card_rank = 5;
+    bytes card_image = 6;
+
+    string inf_set = 7;
+    int32 round_evaluation = 8;
+    string game_result = 9;
+
+    string error = 10;
 }
