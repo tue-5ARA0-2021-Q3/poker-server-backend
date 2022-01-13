@@ -107,6 +107,9 @@ class GameCoordinatorService(Service):
                 lobby.get_logger().error(f'Game has been finished already')
                 raise Exception('Game has been finished already')
 
+            if metadata['game_id'] == 'random':
+                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.UpdateGameId, game_id = str(game_id))
+
             # First connected player creates a game coordinator
             # Second connected player does not create a new game coordinator, but reuses the same one
             lobby.start()

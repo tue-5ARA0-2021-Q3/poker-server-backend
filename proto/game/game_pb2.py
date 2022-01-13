@@ -18,7 +18,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='game',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"5\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x11\n\tkuhn_type\x18\x02 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"\x91\x03\n\x10PlayGameResponse\x12;\n\x05\x65vent\x18\x01 \x01(\x0e\x32,.game.PlayGameResponse.PlayGameResponseEvent\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t\x12\x12\n\nturn_order\x18\x04 \x01(\x05\x12\x11\n\tcard_rank\x18\x05 \x01(\t\x12\x12\n\ncard_image\x18\x06 \x01(\x0c\x12\x0f\n\x07inf_set\x18\x07 \x01(\t\x12\x18\n\x10round_evaluation\x18\x08 \x01(\x05\x12\x13\n\x0bgame_result\x18\t \x01(\t\x12\r\n\x05\x65rror\x18\n \x01(\t\"\x9a\x01\n\x15PlayGameResponseEvent\x12\x0b\n\x07Nothing\x10\x00\x12\x0c\n\x08\x43\x61rdDeal\x10\x01\x12\x0e\n\nNextAction\x10\x02\x12\r\n\tGameStart\x10\x03\x12\x0f\n\x0bRoundResult\x10\x04\x12\x0e\n\nGameResult\x10\x05\x12\t\n\x05\x43lose\x10\x06\x12\x10\n\x0cUpdateGameId\x10\x07\x12\t\n\x05\x45rror\x10\x08\x32\xd0\x01\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"5\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x11\n\tkuhn_type\x18\x02 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\" \n\x0fListGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\"$\n\x10ListGameResponse\x12\x10\n\x08game_ids\x18\x01 \x03(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"\xa2\x03\n\x10PlayGameResponse\x12;\n\x05\x65vent\x18\x01 \x01(\x0e\x32,.game.PlayGameResponse.PlayGameResponseEvent\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t\x12\x12\n\nturn_order\x18\x04 \x01(\x05\x12\x11\n\tcard_rank\x18\x05 \x01(\t\x12\x12\n\ncard_image\x18\x06 \x01(\x0c\x12\x0f\n\x07inf_set\x18\x07 \x01(\t\x12\x18\n\x10round_evaluation\x18\x08 \x01(\x05\x12\x13\n\x0bgame_result\x18\t \x01(\t\x12\x0f\n\x07game_id\x18\n \x01(\t\x12\r\n\x05\x65rror\x18\x0b \x01(\t\"\x9a\x01\n\x15PlayGameResponseEvent\x12\x0b\n\x07Nothing\x10\x00\x12\x0c\n\x08\x43\x61rdDeal\x10\x01\x12\x0e\n\nNextAction\x10\x02\x12\r\n\tGameStart\x10\x03\x12\x0f\n\x0bRoundResult\x10\x04\x12\x0e\n\nGameResult\x10\x05\x12\t\n\x05\x43lose\x10\x06\x12\x10\n\x0cUpdateGameId\x10\x07\x12\t\n\x05\x45rror\x10\x08\x32\xd0\x01\n\x19GameCoordinatorController\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12\x37\n\x04List\x12\x15.game.ListGameRequest\x1a\x16.game.ListGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
 )
 
 
@@ -68,8 +68,8 @@ _PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=475,
-  serialized_end=629,
+  serialized_start=492,
+  serialized_end=646,
 )
 _sym_db.RegisterEnumDescriptor(_PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT)
 
@@ -300,8 +300,15 @@ _PLAYGAMERESPONSE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='error', full_name='game.PlayGameResponse.error', index=8,
+      name='game_id', full_name='game.PlayGameResponse.game_id', index=8,
       number=10, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='error', full_name='game.PlayGameResponse.error', index=9,
+      number=11, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -320,7 +327,7 @@ _PLAYGAMERESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=228,
-  serialized_end=629,
+  serialized_end=646,
 )
 
 _PLAYGAMERESPONSE.fields_by_name['event'].enum_type = _PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT
@@ -383,8 +390,8 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=632,
-  serialized_end=840,
+  serialized_start=649,
+  serialized_end=857,
   methods=[
   _descriptor.MethodDescriptor(
     name='Create',
