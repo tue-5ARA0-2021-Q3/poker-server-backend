@@ -10,6 +10,7 @@ from django.conf import settings
 
 from coordinator.games.kuhn_game import KuhnRootChanceGameState
 from coordinator.games.kuhn_constants import KUHN_TYPE_TO_STR, KUHN_TYPES, CARDS_DEALINGS, POSSIBLE_CARDS
+from coordinator.games.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.models import Game, Player, PlayerTypes
 from coordinator.utilities.logger import GameActionsLogger
 
@@ -30,40 +31,10 @@ class KuhnGameLobbyMessage(object):
 
     def __init__(self, event, **kwargs):
         self.event = event
-        self.data = kwargs
+        self.data  = kwargs
 
     def __str__(self):
         return f'message(event = { self.event }, data = { self.data })'
-
-# Player communicates with a lobby with `KuhnGameLobbyPlayerMessage` object
-# It has a `player_id` field and a corresponding `action` field in a form of a string
-# Lobby has to check if `action` contains an available valid action later on
-class KuhnGameLobbyPlayerMessage(object):
-
-    def __init__(self, player_id, action):
-        self.player_id = player_id
-        self.action = action
-
-    def __str__(self):
-        return f'message(player_id = { self.player_id }, action = { self.action })'
-
-
-# `KuhnGameLobbyPlayer` is a simple wrapper around player
-# `player_id` speaks for itself
-# `bank` current bank of the player
-# `channel` is a primary communication channel between lobby and a player
-# `lobby` is a reference to the lobby player is connected to
-class KuhnGameLobbyPlayer(object):
-
-    def __init__(self, player_id: str, bank: int, lobby):
-        self.player_id = player_id
-        self.bank = bank
-        self.channel = queue.Queue()
-        self.lobby = lobby
-
-    def send_message(self, message: KuhnGameLobbyMessage):
-        self.channel.put(message)
-        self.lobby.get_logger().info(f'Player { self.player_id } received { str(message) }')
 
 
 # `KuhnGameLobbyStage` is a game logic wrapper, see also `kuhn_game.py`
@@ -230,7 +201,7 @@ class KuhnGameLobby(object):
                 raise KuhnGameLobby.PlayerAlreadyExistError('Player with the same id is already exist in this lobby')
 
             # For each player we create a separate channel for messages between game coordinator and player
-            self._players[player_id] = KuhnGameLobbyPlayer(player_id, bank = KuhnGameLobby.InitialBank, lobby = self)
+            self._players[player_id] = KuhnGameLobbyPlayer(player_id, bank = KuhnGameLobby.InitialBank, channel = queue.Queue(), lobby = self)
             self._logger.info(f'Player {player_id} has been registered in the lobby { self.game_id }')
 
             if self.get_num_players() == 1:

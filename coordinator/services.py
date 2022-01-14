@@ -7,7 +7,8 @@ import traceback
 import threading
 from coordinator import models
 
-from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, KuhnGameLobbyPlayerMessage, CoordinatorActions
+from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, CoordinatorActions
+from coordinator.games.kuhn_player import KuhnGameLobbyPlayer, KuhnGameLobbyPlayerMessage
 
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, PlayerTypes
