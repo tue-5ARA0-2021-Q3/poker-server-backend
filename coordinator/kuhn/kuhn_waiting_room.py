@@ -1,4 +1,5 @@
 
+from datetime import time
 import queue
 import threading
 import logging
@@ -6,9 +7,10 @@ from typing import List
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
+from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator
 
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
-from coordinator.models import Player, RoomRegistration, WaitingRoom
+from coordinator.models import GameCoordinator, Player, RoomRegistration, WaitingRoom
 
 # `KuhnWaitingRoom` is a simple abstraction around a set of registered players
 # In a normal game mode waiting room capacity is set to 2
@@ -26,9 +28,17 @@ class KuhnWaitingRoom(object):
     class PlayerDoubleRegistration(Exception):
         pass
 
-    def __init__(self, room_id:str, room_type:int, capacity:int, timeout = settings.LOBBY_CONNECTION_TIMEOUT):
-        self.room_id         = room_id
-        self.room_type       = room_type
+    def __init__(self, coordinator: KuhnCoordinator, capacity: int, timeout: int):
+
+        dbroom = WaitingRoom(
+            coordinator = GameCoordinator.objects.get(id = coordinator.id),
+            capacity    = capacity,
+            timeout     = timeout
+        )
+        dbroom.save()
+
+        self.id              = str(dbroom.id)
+        self.coordinator     = coordinator
         self.lock            = threading.RLock()
         self.capacity        = capacity
         self.timeout         = timeout
@@ -36,6 +46,10 @@ class KuhnWaitingRoom(object):
         self.ready           = threading.Event()
         self.closed          = False
         self.logger          = logging.getLogger('kuhn.waiting')
+
+        self.logger.info(f'Waiting room { self.id } has been created sucessfully.')
+
+        
     
     def get_player_ids(self) -> List[str]:
         with self.lock: 
@@ -66,7 +80,7 @@ class KuhnWaitingRoom(object):
     def mark_as_ready(self) -> bool:
         with self.lock:
             if not self.is_ready():
-                WaitingRoom.objects.get(id = self.room_id).update(ready = True)
+                WaitingRoom.objects.get(id = self.id).update(ready = True)
                 self.ready.set()
 
     def is_closed(self) -> bool:
@@ -76,7 +90,7 @@ class KuhnWaitingRoom(object):
     def close(self, error = None):
         with self.lock:
             if not self.is_closed():
-                WaitingRoom.objects.get(id = self.room_id).update(closed = True, error = error)
+                WaitingRoom.objects.get(id = self.id).update(closed = True, error = None if error is None else str(error))
                 self.closed = True
                 self.ready.set()
 
@@ -96,30 +110,30 @@ class KuhnWaitingRoom(object):
 
             # For each new registration we keep a record in the server's database for logging purposes
             registration = RoomRegistration(
-                room = WaitingRoom.objects.get(id = self.room_id), 
+                room = WaitingRoom.objects.get(id = self.id), 
                 player = Player.objects.get(id = player_id)
             )
 
             with transaction.atomic():
-                WaitingRoom.objects.get(id = self.room_id).update(registered = F('registered') + 1)
+                WaitingRoom.objects.get(id = self.id).update(registered = F('registered') + 1)
                 registration.save()
 
             # For each player we create a separate channel for messages between game coordinator and player
             self.player_channels[player_id] = queue.Queue()
 
-            self.logger.info(f'Player { player_id } has been registered in the waiting room { self.room_id }')
+            self.logger.info(f'Player { player_id } has been registered in the waiting room { self.id }')
 
             # We do not expect the number of registered players to exceed room capacity, however, we do extra check here just to be sure
             # Should be unreachable
             if self.get_num_registered_players() > self.get_room_capacity():
                 self.close(error = 'Room capacity exceeded')
-                self.logger.warning(f'Waiting room { self.room_id } has more number of registered players than room capacity')
+                self.logger.warning(f'Waiting room { self.id } has more number of registered players than room capacity')
                 return
 
             # If number of registered players is equal to room capacity we close further registrations and mark room as ready
             if self.get_num_registered_players() == self.get_room_capacity(): 
                 self.mark_as_ready()
-                self.logger.info(f'Waiting room { self.room_id } marked as ready.')
+                self.logger.info(f'Waiting room { self.id } marked as ready.')
                 return
 
 

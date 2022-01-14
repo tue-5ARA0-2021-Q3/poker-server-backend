@@ -33,7 +33,7 @@ LOGGING = {
         }
     },
     'loggers': {
-        'kuhn.lobby': {
+        'kuhn.coordinator': {
             'handlers': [ 'console', 'file' ],
             'level': 'DEBUG'
         },

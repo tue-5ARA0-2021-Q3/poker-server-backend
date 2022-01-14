@@ -39,11 +39,20 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_grpc_framework',
+    'log_viewer',
     'mathfilters',
     'pages',
     'coordinator',
-
 ]
+
+# Logging viewer 
+
+# LOG_VIEWER_FILES = ['logfile1', 'logfile2', ...]
+# LOG_VIEWER_FILES_DIR = 'logs/'
+LOG_VIEWER_FILES_PATTERN = '*.log*'
+LOG_VIEWER_PAGE_LENGTH = 25       # total log lines per-page
+LOG_VIEWER_MAX_READ_LINES = 1000  # total log lines will be read
+LOG_VIEWER_PATTERNS = ['[INFO]', '[DEBUG]', '[WARNING]', '[ERROR]', '[CRITICAL]']
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

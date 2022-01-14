@@ -75,15 +75,18 @@ class PlayerTypes(IntEnum):
     def choices(cls):
         return [(key.value, key.name) for key in cls]
 
-class KuhnTypes(IntEnum):
-    CARD3 = 1
-    CARD4 = 2
+class GameTypes(IntEnum):
+    KUHN_CARD3 = 1
+    KUHN_CARD4 = 2
 
     @classmethod
     def choices(cls):
         return [(key.value, key.name) for key in cls]
 
-class WaitingRoomTypes(IntEnum):
+# Game coordinator support different types of game scheduling
+# DUEL type spawns a single game between two players
+# TOURNAMENT type may spawn multiple games between many players
+class GameCoordinatorTypes(IntEnum):
     DUEL_PLAYER_BOT              = 1
     DUEL_PLAYER_PLAYER           = 2
     TOURNAMENT_PLAYERS           = 3
@@ -93,24 +96,39 @@ class WaitingRoomTypes(IntEnum):
     def choices(cls):
         return [(key.value, key.name) for key in cls]
 
+# GameCoordinator simply holds information about type of game scheduling, actual game being played and creation timestamp
+# It also contains recent status of coordinator itself, like `is_started`, `is_finished` or `is_failed`
+# Before starting a game players should connect to a coordinator with a specific id or just a random coordinator
+class GameCoordinator(models.Model):
+    id               = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    coordinator_type = models.IntegerField(choices = GameCoordinatorTypes.choices(), null = False)
+    is_started       = models.BooleanField(null = False, default = False)
+    is_finished      = models.BooleanField(null = False, default = False)
+    is_failed        = models.BooleanField(null = False, default = False)
+    is_private       = models.BooleanField(null = False)
+    created_by       = models.OneToOneField(Player, on_delete = models.CASCADE, null = False)
+    created_at       = models.DateTimeField(auto_now_add = True)
+    game_type        = models.IntegerField(choices = GameTypes.choices(), null = False)
+    error            = models.TextField(null = True)
+
 # Normally before games start coordinator will create a waiting room for players with an arbitrary capacity
 # Coordinator will wait for some timeout for all players to connect, close waiting room and depending on the type of waiting room
 # and number of connected players closes it or proceeds with games between players
 # See also `RoomRegistration`
 class WaitingRoom(models.Model):
-    id         = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
-    capacity   = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
-    registered = models.IntegerField(validators = [ MinValueValidator(0) ], default = 0, null = False)
-    timeout    = models.IntegerField(validators = [ MinValueValidator(0) ], null = False)
-    roomtype   = models.IntegerField(choices = WaitingRoomTypes.choices(), null = False)
-    ready      = models.BooleanField(default = False, null = False)
-    closed     = models.BooleanField(default = False, null = False)
-    error      = models.TextField(null = True)
+    id          = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    coordinator = models.OneToOneField(GameCoordinator, on_delete = models.CASCADE, null = False)
+    capacity    = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
+    registered  = models.IntegerField(validators = [ MinValueValidator(0) ], default = 0, null = False)
+    timeout     = models.IntegerField(validators = [ MinValueValidator(0) ], null = False)
+    ready       = models.BooleanField(default = False, null = False)
+    closed      = models.BooleanField(default = False, null = False)
+    error       = models.TextField(null = True)
 
 class RoomRegistration(models.Model):
     id     = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
-    room   = models.ForeignKey(WaitingRoom, on_delete=models.CASCADE)
-    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    room   = models.ForeignKey(WaitingRoom, on_delete = models.CASCADE, null = False)
+    player = models.ForeignKey(Player, on_delete = models.CASCADE, null = False)
 
 
 class Game(models.Model):
@@ -126,7 +144,7 @@ class Game(models.Model):
     player_2 = models.UUIDField(null = True)
     outcome = models.TextField(default = '')
     winner_id = models.UUIDField(null = True)
-    kuhn_type = models.IntegerField(choices = KuhnTypes.choices(), null = False)
+    kuhn_type = models.IntegerField(choices = GameTypes.choices(), null = False)
     player_type = models.IntegerField(choices = PlayerTypes.choices(), null = False)
 
 class GameLogTypes(IntEnum):
