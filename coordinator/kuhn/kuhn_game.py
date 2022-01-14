@@ -1,4 +1,4 @@
-from coordinator.games.kuhn_constants import CHECK, BET, CALL, FOLD, A, CHANCE, RESULTS_MAP
+from coordinator.kuhn.kuhn_constants import CHECK, BET, CALL, FOLD, A, CHANCE, RESULTS_MAP
 import random
 
 

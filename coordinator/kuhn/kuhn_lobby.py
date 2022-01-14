@@ -8,9 +8,9 @@ import subprocess
 from typing import List, Union
 from django.conf import settings
 
-from coordinator.games.kuhn_game import KuhnRootChanceGameState
-from coordinator.games.kuhn_constants import KUHN_TYPE_TO_STR, KUHN_TYPES, CARDS_DEALINGS, POSSIBLE_CARDS
-from coordinator.games.kuhn_player import KuhnGameLobbyPlayer
+from coordinator.kuhn.kuhn_game import KuhnRootChanceGameState
+from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR, KUHN_TYPES, CARDS_DEALINGS, POSSIBLE_CARDS
+from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.models import Game, Player, PlayerTypes
 from coordinator.utilities.logger import GameActionsLogger
 

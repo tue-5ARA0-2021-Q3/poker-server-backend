@@ -18,3 +18,28 @@ ALLOW_BOTS = True
 BOT_FOLDER = './bots'
 BOT_CREATION_DELAY = 0.0 # 0.0 sec
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG'
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'level': 'INFO',
+            'filename': 'server.log'
+        }
+    },
+    'loggers': {
+        'kuhn.lobby': {
+            'handlers': [ 'console', 'file' ],
+            'level': 'DEBUG'
+        },
+        'kuhn.waiting': {
+            'handlers': [ 'console', 'file' ],
+            'level': 'DEBUG'
+        }
+    }
+}

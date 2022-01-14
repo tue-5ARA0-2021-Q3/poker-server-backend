@@ -1,5 +1,6 @@
 from django.db import models
-from django.contrib import admin
+from django.core.validators import MaxValueValidator, MinValueValidator
+
 from enum import IntEnum
 
 import uuid
@@ -65,14 +66,6 @@ class Player(models.Model):
     is_bot = models.BooleanField(null = False, default = False)
 
 
-class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('token', 'public_token', 'name', 'email', 'is_disabled', 'is_test', 'is_bot')
-    list_filter = ('token', 'public_token', 'name', 'email', 'is_disabled', 'is_test', 'is_bot')
-    readonly_fields = ('token', 'public_token', 'is_test', 'is_bot')
-
-    class Meta:
-        model = Player
-
 
 class PlayerTypes(IntEnum):
     PLAYER_BOT = 1
@@ -89,6 +82,35 @@ class KuhnTypes(IntEnum):
     @classmethod
     def choices(cls):
         return [(key.value, key.name) for key in cls]
+
+class WaitingRoomTypes(IntEnum):
+    DUEL_PLAYER_BOT              = 1
+    DUEL_PLAYER_PLAYER           = 2
+    TOURNAMENT_PLAYERS           = 3
+    TOURNAMENT_PLAYERS_WITH_BOTS = 4
+
+    @classmethod
+    def choices(cls):
+        return [(key.value, key.name) for key in cls]
+
+# Normally before games start coordinator will create a waiting room for players with an arbitrary capacity
+# Coordinator will wait for some timeout for all players to connect, close waiting room and depending on the type of waiting room
+# and number of connected players closes it or proceeds with games between players
+# See also `RoomRegistration`
+class WaitingRoom(models.Model):
+    id         = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    capacity   = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
+    registered = models.IntegerField(validators = [ MinValueValidator(0) ], default = 0, null = False)
+    timeout    = models.IntegerField(validators = [ MinValueValidator(0) ], null = False)
+    roomtype   = models.IntegerField(choices = WaitingRoomTypes.choices(), null = False)
+    ready      = models.BooleanField(default = False, null = False)
+    closed     = models.BooleanField(default = False, null = False)
+    error      = models.TextField(null = True)
+
+class RoomRegistration(models.Model):
+    id     = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    room   = models.ForeignKey(WaitingRoom, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
 
 
 class Game(models.Model):
@@ -107,19 +129,6 @@ class Game(models.Model):
     kuhn_type = models.IntegerField(choices = KuhnTypes.choices(), null = False)
     player_type = models.IntegerField(choices = PlayerTypes.choices(), null = False)
 
-
-class GameAdmin(admin.ModelAdmin):
-    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'is_private', 'created_at', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'player_type')
-    list_filter = ('is_started', 'is_finished', 'is_failed', 'is_private', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'player_type')
-
-    readonly_fields = ('is_started', 'is_finished', 'is_failed', 'is_private',
-                       'error', 'created_by', 'created_at', 'player_1', 'player_2', 'outcome',
-                       'winner_id', 'kuhn_type', 'player_type')
-
-    class Meta:
-        model = Game
-
-
 class GameLogTypes(IntEnum):
     INFO = 1
     WARN = 2
@@ -137,15 +146,3 @@ class GameLog(models.Model):
     type = models.IntegerField(choices = GameLogTypes.choices(), null = False)
     content = models.TextField(null = False, editable = False)
 
-
-class GameLogAdmin(admin.ModelAdmin):
-    list_display = ('game_id', 'index', 'time_seconds', 'type', 'content')
-    list_filter = ('game_id', 'type')
-
-    readonly_fields = ('game_id', 'index', 'created_at', 'type', 'content')
-
-    class Meta:
-        model = Game
-
-    def time_seconds(self, obj):
-        return obj.created_at.strftime('%b %d %H:%M:%S.%f')
