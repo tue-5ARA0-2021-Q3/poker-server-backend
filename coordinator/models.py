@@ -106,7 +106,7 @@ class GameCoordinator(models.Model):
     is_finished      = models.BooleanField(null = False, default = False)
     is_failed        = models.BooleanField(null = False, default = False)
     is_private       = models.BooleanField(null = False)
-    created_by       = models.OneToOneField(Player, on_delete = models.CASCADE, null = False)
+    created_by       = models.ForeignKey(Player, on_delete = models.CASCADE, null = False)
     created_at       = models.DateTimeField(auto_now_add = True)
     game_type        = models.IntegerField(choices = GameTypes.choices(), null = False)
     error            = models.TextField(null = True)

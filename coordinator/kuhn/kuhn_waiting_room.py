@@ -7,9 +7,7 @@ from typing import List
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
-from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator
 
-from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.models import GameCoordinator, Player, RoomRegistration, WaitingRoom
 
 # `KuhnWaitingRoom` is a simple abstraction around a set of registered players
@@ -28,7 +26,7 @@ class KuhnWaitingRoom(object):
     class PlayerDoubleRegistration(Exception):
         pass
 
-    def __init__(self, coordinator: KuhnCoordinator, capacity: int, timeout: int):
+    def __init__(self, coordinator, capacity: int, timeout: int):
 
         dbroom = WaitingRoom(
             coordinator = GameCoordinator.objects.get(id = coordinator.id),
@@ -80,17 +78,17 @@ class KuhnWaitingRoom(object):
     def mark_as_ready(self) -> bool:
         with self.lock:
             if not self.is_ready():
-                WaitingRoom.objects.get(id = self.id).update(ready = True)
+                WaitingRoom.objects.filter(id = self.id).update(ready = True)
                 self.ready.set()
 
     def is_closed(self) -> bool:
         with self.lock:
-            return self.is_closed
+            return self.closed
 
     def close(self, error = None):
         with self.lock:
             if not self.is_closed():
-                WaitingRoom.objects.get(id = self.id).update(closed = True, error = None if error is None else str(error))
+                WaitingRoom.objects.filter(id = self.id).update(closed = True, error = None if error is None else str(error))
                 self.closed = True
                 self.ready.set()
 
@@ -115,7 +113,7 @@ class KuhnWaitingRoom(object):
             )
 
             with transaction.atomic():
-                WaitingRoom.objects.get(id = self.id).update(registered = F('registered') + 1)
+                WaitingRoom.objects.filter(id = self.id).update(registered = F('registered') + 1)
                 registration.save()
 
             # For each player we create a separate channel for messages between game coordinator and player

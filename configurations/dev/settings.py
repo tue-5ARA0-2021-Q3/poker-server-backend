@@ -21,15 +21,23 @@ BOT_CREATION_DELAY = 0.0 # 0.0 sec
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '[{levelname}][{asctime}]: {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'level': 'DEBUG'
+            'level': 'DEBUG',
+            'formatter': 'default'
         },
         'file': {
             'class': 'logging.FileHandler',
-            'level': 'INFO',
-            'filename': 'server.log'
+            'level': 'DEBUG',
+            'filename': 'server.log',
+            'formatter': 'default'
         }
     },
     'loggers': {

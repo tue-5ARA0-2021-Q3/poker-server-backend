@@ -1,5 +1,6 @@
 import threading
 import logging
+from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 
 from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, WaitingRoom
 
@@ -34,14 +35,14 @@ class KuhnCoordinator(object):
         self.logger           = logging.getLogger('kuhn.coordinator')
 
         try:
-            self.waiting_room = WaitingRoom(dbcoordinator, capacity, timeout)
+            self.waiting_room = KuhnWaitingRoom(dbcoordinator, capacity, timeout)
         except Exception as e:
-            GameCoordinator.objects.get(id = self.id).update(is_failed = True, error = str(e))
+            GameCoordinator.objects.filter(id = self.id).update(is_failed = True, error = str(e))
             self.logger.warning(f'Failed to create waiting room for coordinator { self.id }')
             raise KuhnCoordinator.CoordinatorWaitingRoomCreationFailed('Coordinator could not create waiting room')
 
         # Calls run in a separate thread
-        threading.Thread.__init__(self)
+        threading.Thread(target = self.run).start()
 
         self.logger.info(f'Coordinator { self.id } has been created successfully')
 
@@ -56,12 +57,12 @@ class KuhnCoordinator(object):
                 if is_failed:
                     self.logger.warning(f'Game cordinator { self.id } closed with an error: { error }')
                 self.waiting_room.close(error = error) # Here we do not forget to close corresponding waiting room
-                GameCoordinator.objects.get(id = self.id).update(is_finished = True, is_failed = is_failed, error = error)
+                GameCoordinator.objects.filter(id = self.id).update(is_finished = True, is_failed = is_failed, error = error)
                 pass
 
     def run(self):
 
-        self.logger.info('Coordinator { self.id } initialized `run` loop.')
+        self.logger.info(f'Coordinator { self.id } initialized `run` loop.')
         # First we just wait for players to be registered
         # is_ready = self.waiting_room.wait_ready()
 
@@ -74,4 +75,4 @@ class KuhnCoordinator(object):
 
         self.close()
 
-        self.logger.info('Coordinator { self.id } successfully finalized.')
+        self.logger.info(f'Coordinator { self.id } successfully finalized.')

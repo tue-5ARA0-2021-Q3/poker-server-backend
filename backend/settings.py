@@ -47,8 +47,8 @@ INSTALLED_APPS = [
 
 # Logging viewer 
 
-# LOG_VIEWER_FILES = ['logfile1', 'logfile2', ...]
-# LOG_VIEWER_FILES_DIR = 'logs/'
+LOG_VIEWER_FILES = [ 'server' ]
+LOG_VIEWER_FILES_DIR = '.'
 LOG_VIEWER_FILES_PATTERN = '*.log*'
 LOG_VIEWER_PAGE_LENGTH = 25       # total log lines per-page
 LOG_VIEWER_MAX_READ_LINES = 1000  # total log lines will be read

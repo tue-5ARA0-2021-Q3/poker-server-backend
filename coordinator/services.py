@@ -6,12 +6,14 @@ import queue
 import traceback
 import threading
 from coordinator import models
+import coordinator
+from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator
 
 from coordinator.kuhn.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, CoordinatorActions
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer, KuhnGameLobbyPlayerMessage
 
 from django_grpc_framework.services import Service
-from coordinator.models import Game, Player, PlayerTypes
+from coordinator.models import Game, GameCoordinatorTypes, GameTypes, Player, PlayerTypes
 from coordinator.utilities.card import Card
 from proto.game import game_pb2
 from django.conf import settings
@@ -19,6 +21,7 @@ from enum import Enum
 
 class GameCoordinatorService(Service):
     game_lobbies = []
+    game_coordinators = []
     games_lock = threading.Lock()
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
@@ -292,6 +295,18 @@ class GameCoordinatorService(Service):
             game_lobbies = list(filter(lambda game: game.game_id == game_id, GameCoordinatorService.game_lobbies))
             if len(game_lobbies) != 0:
                 return game_lobbies[0]
+
+            # TODO replace lobby with coordinator
+            player      = Player.objects.get(token = game.created_by)
+            coordinator = KuhnCoordinator(
+                created_by       = player, 
+                coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER,
+                game_type        = GameTypes.KUHN_CARD3,
+                capacity         = 2,
+                timeout          = 2,
+                is_private       = False
+            )
+            GameCoordinatorService.game_coordinators.append(coordinator)
 
             new_lobby = KuhnGameLobby(game_id, kuhn_type, player_type)
             GameCoordinatorService.game_lobbies.append(new_lobby)
