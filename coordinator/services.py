@@ -7,14 +7,14 @@ import traceback
 import threading
 from coordinator import models
 
-from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, KuhnGameLobbyPlayerMessage
+from coordinator.games.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, KuhnGameLobbyPlayerMessage, CoordinatorActions
 
 from django_grpc_framework.services import Service
 from coordinator.models import Game, Player, PlayerTypes
 from coordinator.utilities.card import Card
 from proto.game import game_pb2
 from django.conf import settings
-
+from enum import Enum
 
 class GameCoordinatorService(Service):
     game_lobbies = []
@@ -144,14 +144,14 @@ class GameCoordinatorService(Service):
 
                 # In case if lobby has been finished, but player requests a list of available actions just 
                 # send a `Close` disconnect event and break out of the loop since we do not expect any other message after that
-                if message.action == 'AVAILABLE_ACTIONS' and lobby.is_finished():
+                if message.action == CoordinatorActions.AvailableActions and lobby.is_finished():
                     lobby.get_logger().info(f'Sending disconnect event to the player { token }')
                     yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Close)
                     break
 
                 # Check against utility messages: 'CONNECT' and 'WAIT'
                 # In principle this messages do nothing, but can be used to initiate a new game or to wait for another player action
-                if message.action != 'CONNECT' and message.action != 'WAIT':
+                if message.action != CoordinatorActions.Connect and message.action != CoordinatorActions.Wait:
                     lobby.channel.put(KuhnGameLobbyPlayerMessage(token, message.action))
 
                 # Waiting for a response from the game coordinator about another player's decision and available actions

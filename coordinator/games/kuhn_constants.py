@@ -46,12 +46,12 @@ RESULTS_MAP = {
     KQ: 1,
     KJ: 1,
     QJ: 1,
-    AK: -1,
-    AQ: -1,
-    AJ: -1,
-    KA: 1,
-    QA: 1,
-    JA: 1
+    AK: 1,
+    AQ: 1,
+    AJ: 1,
+    KA: -1,
+    QA: -1,
+    JA: -1
 }
 
 CHANCE = "CHANCE"

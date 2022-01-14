@@ -315,9 +315,19 @@ class KuhnGameLobby(object):
         # First player (last_round.player_id_turn) starts the round
         # Both players later on request a list of their available actions
         if player.player_id == last_round.player_id_turn:
-            player.send_message(KuhnGameLobbyMessage(KuhnGameLobbyEvents.CardDeal, card = last_round.stage.card(0), turn_order = 1, actions = [ 'AVAILABLE_ACTIONS' ]))
+            player.send_message(KuhnGameLobbyMessage(
+                KuhnGameLobbyEvents.CardDeal, 
+                card       = last_round.stage.card(0), 
+                turn_order = 1, 
+                actions    = [ CoordinatorActions.AvailableActions ]
+            ))
         else:
-            player.send_message(KuhnGameLobbyMessage(KuhnGameLobbyEvents.CardDeal, card = last_round.stage.card(1), turn_order = 2, actions = [ 'AVAILABLE_ACTIONS' ]))
+            player.send_message(KuhnGameLobbyMessage(
+                KuhnGameLobbyEvents.CardDeal, 
+                card       = last_round.stage.card(1), 
+                turn_order = 2, 
+                actions    = [ CoordinatorActions.AvailableActions ]
+            ))
 
     def evaluate_round(self):
         # This function evaluate a round's outcome at the terminal stage
@@ -417,6 +427,13 @@ def game_bot(lobby: KuhnGameLobby, bot_token: str, bot_exec: str, exec_delay: in
     except Exception as e:
         lobby.finish(error = str(e))
 
+class CoordinatorActions(str, Enum):
+    Connect = 'CONNECT'
+    NewRound = 'ROUND'
+    AvailableActions = 'AVAILABLE_ACTIONS'
+    Wait = 'WAIT'
+    IsAlive = 'IS_ALIVE'
+
 def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
     try:
         # In the beginning of the session lobby waits for both players to be connected
@@ -438,7 +455,7 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
 
                 # First we check if the message is about to start a new round
                 # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
-                if message.action == 'ROUND':
+                if message.action == CoordinatorActions.NewRound:
                     if lobby.check_players_bank():
                         lobby.start_new_round(message.player_id)
                     else:
@@ -450,7 +467,7 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                         ))
                 # Second we chand if player requests a list of available actions for him
                 # That usually happens right after card deal event
-                elif message.action == 'AVAILABLE_ACTIONS':
+                elif message.action == CoordinatorActions.AvailableActions:
                     player = lobby.get_player(message.player_id)
                     if player.player_id == current_round.player_id_turn:
                         player.send_message(KuhnGameLobbyMessage(
@@ -462,10 +479,10 @@ def game_lobby_coordinator(lobby: KuhnGameLobby, messages_timeout: int):
                         player.send_message(KuhnGameLobbyMessage(
                             KuhnGameLobbyEvents.NextAction, 
                             inf_set = current_round.stage.public_inf_set(), 
-                            actions = [ 'WAIT' ]
+                            actions = [ CoordinatorActions.Wait ]
                         ))
                 # Wait is an utility message
-                elif message.action == 'WAIT':
+                elif message.action == CoordinatorActions.Wait:
                     continue
                 # If message action is not 'START' we check that the message came from a player and assume it is their next action
                 elif message.player_id == current_round.player_id_turn:
