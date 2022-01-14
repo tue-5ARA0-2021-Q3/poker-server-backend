@@ -57,13 +57,13 @@ def pick_random_username():
 
 
 class Player(models.Model):
-    token = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    token        = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
     public_token = models.UUIDField(default = uuid.uuid4, editable = False, null = False)
-    name = models.CharField(max_length = 128, null = False, default = pick_random_username)
-    email = models.EmailField(null = True)
-    is_disabled = models.BooleanField(null = False, editable = True, default = False)
-    is_test = models.BooleanField(null = False, default = False)
-    is_bot = models.BooleanField(null = False, default = False)
+    name         = models.CharField(max_length = 128, null = False, default = pick_random_username)
+    email        = models.EmailField(null = True)
+    is_disabled  = models.BooleanField(null = False, editable = True, default = False)
+    is_test      = models.BooleanField(null = False, default = False)
+    is_bot       = models.BooleanField(null = False, default = False)
 
 
 
@@ -146,6 +146,15 @@ class Game(models.Model):
     winner_id = models.UUIDField(null = True)
     kuhn_type = models.IntegerField(choices = GameTypes.choices(), null = False)
     player_type = models.IntegerField(choices = PlayerTypes.choices(), null = False)
+
+class GameRound(models.Model):
+    id          = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    game        = models.ForeignKey(Game, on_delete = models.CASCADE, null = False)
+    first       = models.ForeignKey(Player, on_delete = models.CASCADE, null = False)
+    index       = models.IntegerField(validators = [ MinValueValidator(1) ])
+    state       = models.CharField(max_length = 64, null = False)
+    actions     = models.CharField(max_length = 128, null = False)
+    evaluation  = models.IntegerField(null = True)
 
 class GameLogTypes(IntEnum):
     INFO = 1

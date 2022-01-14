@@ -1,8 +1,15 @@
+import queue
 import threading
 import logging
+from enum import Enum
+
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 
 from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, WaitingRoom
+
+class KuhnCoordinatorEventTypes(Enum):
+    Completed = 1
+    Error = 2
 
 class KuhnCoordinator(object):
 
@@ -76,3 +83,17 @@ class KuhnCoordinator(object):
         self.close()
 
         self.logger.info(f'Coordinator { self.id } successfully finalized.')
+
+    # TODO - play game in a separate thread and wait for a queue of events
+    def play_game(self, game_callback) -> queue.Queue:
+        q = queue.Queue()
+
+        def __game_callback__():
+            try:
+                game_callback()
+            except Exception as e:
+                q.put((KuhnCoordinatorEventTypes.Error, { 'error': str(e) }))
+
+        threading.Thread(target = __game_callback__).start()
+
+        return q
