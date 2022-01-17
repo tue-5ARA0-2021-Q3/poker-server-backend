@@ -101,14 +101,24 @@ class GameCoordinatorService(Service):
             # Each player should register themself in the game coordinator lobby
             coordinator.waiting_room.register_player(token)
 
-            is_ready = coordinator.waiting_room.wait_ready()
+            is_ready = coordinator.wait_ready()
 
+            # We do not expect for this branch to be executed, but we do check it just in case
             if not is_ready:
-                coordinator.close(error = f'Timeout in waiting room. Not enough players to play with.')
-                GameCoordinatorService.remove_coordinator(coordinator)
                 yield game_pb2.PlayGameResponse(
                     event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, 
-                    error = 'Timeout in waiting room. Not enough players to play with.'
+                    error = 'Timeout in coordinator. Coordinator is not ready. Please report.'
+                )
+                coordinator.close(error = 'Coordinator is not ready.')
+                GameCoordinatorService.logger.error('Timeout in coordinator. Coordinator is not ready.')
+                GameCoordinatorService.remove_coordinator(coordinator)
+                return
+
+            # We do not expect coordinator to be closed here without any error
+            if coordinator.is_closed():
+                yield game_pb2.PlayGameResponse(
+                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, 
+                    error = coordinator.error
                 )
                 return
 

@@ -55,7 +55,9 @@ class KuhnCoordinator(object):
         self.game_type        = game_type
         self.is_private       = is_private
         self.channel          = queue.Queue()
+        self.ready            = threading.Event()
         self.closed           = threading.Event()
+        self.error            = None
         self.logger           = logging.getLogger('kuhn.coordinator')
 
         try:
@@ -71,6 +73,19 @@ class KuhnCoordinator(object):
 
         self.logger.info(f'Coordinator { self.id } has been created successfully')
 
+    def is_ready(self) -> bool:
+        with self.lock:
+            return self.ready.is_set()
+
+    def wait_ready(self) -> bool:
+        return self.ready.wait(timeout = settings.COORDINATOR_READY_TIMEOUT)
+
+    def mark_as_ready(self):
+        with self.lock:
+            if not self.is_ready():
+                self.logger.info(f'Game cordinator { self.id } has been marked as ready.')
+                self.ready.set()
+
     def is_closed(self) -> bool:
         with self.lock:
             return self.closed.is_set()
@@ -81,6 +96,7 @@ class KuhnCoordinator(object):
                 is_failed, error = (False, None) if error is None else (True, str(error))
                 if is_failed:
                     self.logger.warning(f'Game cordinator { self.id } closed with an error: { error }')
+                self.error = error
                 self.waiting_room.close(error = error) # Here we do not forget to close corresponding waiting room
                 GameCoordinator.objects.filter(id = self.id).update(is_finished = True, is_failed = is_failed, error = error)
                 self.closed.set()
@@ -121,19 +137,26 @@ class KuhnCoordinator(object):
     def run(self):
 
         self.logger.info(f'Coordinator { self.id } initialized `run` loop.')
-        # First we just wait for players to be registered
 
-        # Lets not do anything at the moment and just test current stage of the code
+        # First we just wait for players to be registered
         is_ready = self.waiting_room.wait_ready()
 
+        # We do a series of checks here and in case of an error close coordinator without even starting any games
         if self.waiting_room.is_closed():
             self.close(error = 'Waiting room has been closed unexpectedly.')
-            return
         elif not is_ready:
             self.close(error = 'Waiting room have not enough players after timeout.')
-            return
+        
+        # We mark coordinator as ready at this point since upstream service waits for this signal
+        # However this event does not mean that coordinator is not closed
+        self.mark_as_ready()
 
-        self.close()
+        # If coordinator has not been closed we proceed with a normal coordinator logic
+        # Otherwise it will be just finalized
+        if not self.is_closed():
+            GameCoordinator.objects.filter(id = self.id).update(is_started = True)
+            self.close(error = 'Not implemented')
+    
         self.logger.info(f'Coordinator { self.id } successfully finalized.')
 
     @staticmethod

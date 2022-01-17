@@ -10,6 +10,12 @@ CARD_GENERATED_IMAGE_NOISE_LEVEL = 0.15
 CARD_GENERATED_IMAGE_ROTATE_MAX_ANGLE = 15
 
 COORDINATOR_REVEAL_CARDS = False
+
+# This settings control for how long GRPC service should wait for a coordinator to be ready
+# Normally if coordinator does not send ready event then something wrong is going on on server side
+# We do not expect to hit this timeout setting, so we set it larger than the others
+COORDINATOR_READY_TIMEOUT = 100 # default is 100 sec, 
+
 COORDINATOR_WAITING_TIMEOUT = 10  # 10 sec
 COORDINATOR_CONNECTION_TIMEOUT = 5  # 5 sec
 COORDINATOR_INTERVAL_CHECK = 60 # 60 sec
