@@ -95,7 +95,7 @@ class GameCoordinatorService(Service):
         #     - in non-tournament mode players always receive `Close` event at this stage
         try:
 
-            if metadata['game_id'] == 'random':
+            if metadata['game_id'] == 'random' or metadata['game_id'] == 'bot':
                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.UpdateGameId, game_id = str(coordinator_id))
 
             # Each player should register themself in the game coordinator lobby
@@ -193,7 +193,6 @@ class GameCoordinatorService(Service):
                     except queue.Empty:
                         if coordinator.is_closed() and player_channel.empty():
                             coordinator.logger.error(f'Coordinator has been finished while waiting for response from player.')
-                            return
 
             callback_active = False
 

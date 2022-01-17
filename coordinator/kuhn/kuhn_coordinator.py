@@ -83,7 +83,7 @@ class KuhnCoordinator(object):
                     self.logger.warning(f'Game cordinator { self.id } closed with an error: { error }')
                 self.waiting_room.close(error = error) # Here we do not forget to close corresponding waiting room
                 GameCoordinator.objects.filter(id = self.id).update(is_finished = True, is_failed = is_failed, error = error)
-                pass
+                self.closed.set()
 
     def add_bots(self):
 
