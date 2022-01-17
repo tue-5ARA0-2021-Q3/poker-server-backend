@@ -29,7 +29,7 @@ message PlayGameResponse {
         RoundResult = 4;
         GameResult = 5;
         Close = 6;
-        UpdateGameId = 7;
+        UpdateCoordinatorId = 7;
         Error = 8;
     }
     PlayGameResponseEvent event = 1;
@@ -43,6 +43,6 @@ message PlayGameResponse {
     int32 round_evaluation = 8;
     string game_result = 9;
 
-    string game_id = 10;
+    string coordinator_id = 10;
     string error = 11;
 }

@@ -55,7 +55,7 @@ class GameCoordinatorService(Service):
             raise Exception(f'User is disabled')
 
         game_type      = resolve_kuhn_type(metadata['kuhn_type'])
-        coordinator    = GameCoordinatorService.find_coordinator_instance(player, metadata['game_id'], game_type)
+        coordinator    = GameCoordinatorService.find_coordinator_instance(player, metadata['coordinator_id'], game_type)
         coordinator_id = coordinator.id
 
         GameCoordinatorService.logger.info(f'Player { token } is trying to connect to the coordinator with id = { coordinator_id }')
@@ -94,8 +94,8 @@ class GameCoordinatorService(Service):
         #     - in non-tournament mode players always receive `Close` event at this stage
         try:
 
-            if metadata['game_id'] == 'random' or metadata['game_id'] == 'bot':
-                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.UpdateGameId, game_id = str(coordinator_id))
+            if metadata['coordinator_id'] == 'random' or metadata['coordinator_id'] == 'bot':
+                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.UpdateCoordinatorId, coordinator_id = str(coordinator_id))
 
             # Each player should register themself in the game coordinator lobby
             coordinator.waiting_room.register_player(token)
@@ -296,7 +296,7 @@ class GameCoordinatorService(Service):
                 coordinator = public_coordinators[0] # We pick first available public coordinator
                 return GameCoordinatorService.coordinators[ str(coordinator.id) ] # Coordinator must exist in service internal dict
             else:
-                # In case if game_id was random and there are no games available at the moment we create a new one
+                # In case if coordinator id was set to `random` and there were no games available at the moment we create a new one
                 return GameCoordinatorService.add_coordinator(KuhnCoordinator(
                     coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER,
                     game_type        = game_type,
@@ -305,7 +305,7 @@ class GameCoordinatorService(Service):
                     is_private       = False
                 ))
         else:
-            # Last case should be a valid game_id otherwise we return an error
+            # Last case should be a valid coordinator id otherwise we return an error
             coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER if not player.is_bot else GameCoordinatorTypes.DUEL_PLAYER_BOT
             candidates = GameCoordinator.objects.filter(id = coordinator_id, coordinator_type = coordinator_type, game_type = game_type)
             if len(candidates) != 0:

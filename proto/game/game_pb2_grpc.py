@@ -19,11 +19,6 @@ class GameCoordinatorControllerStub(object):
         request_serializer=proto_dot_game_dot_game__pb2.CreateGameRequest.SerializeToString,
         response_deserializer=proto_dot_game_dot_game__pb2.CreateGameResponse.FromString,
         )
-    self.List = channel.unary_unary(
-        '/game.GameCoordinatorController/List',
-        request_serializer=proto_dot_game_dot_game__pb2.ListGameRequest.SerializeToString,
-        response_deserializer=proto_dot_game_dot_game__pb2.ListGameResponse.FromString,
-        )
     self.Play = channel.stream_stream(
         '/game.GameCoordinatorController/Play',
         request_serializer=proto_dot_game_dot_game__pb2.PlayGameRequest.SerializeToString,
@@ -36,13 +31,6 @@ class GameCoordinatorControllerServicer(object):
   pass
 
   def Create(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def List(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -63,11 +51,6 @@ def add_GameCoordinatorControllerServicer_to_server(servicer, server):
           servicer.Create,
           request_deserializer=proto_dot_game_dot_game__pb2.CreateGameRequest.FromString,
           response_serializer=proto_dot_game_dot_game__pb2.CreateGameResponse.SerializeToString,
-      ),
-      'List': grpc.unary_unary_rpc_method_handler(
-          servicer.List,
-          request_deserializer=proto_dot_game_dot_game__pb2.ListGameRequest.FromString,
-          response_serializer=proto_dot_game_dot_game__pb2.ListGameResponse.SerializeToString,
       ),
       'Play': grpc.stream_stream_rpc_method_handler(
           servicer.Play,
