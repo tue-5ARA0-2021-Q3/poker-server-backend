@@ -29,7 +29,7 @@ class GameCoordinatorService(Service):
         if player.is_disabled:
             raise Exception(f'User is disabled')
 
-        game_type = resolve_kuhn_type(request.kuhn_type)
+        game_type = resolve_kuhn_type(request.game_type)
 
         # Players can only create private games with DUEL type and only against real players
         coordinator = GameCoordinatorService.add_coordinator(KuhnCoordinator(
@@ -54,7 +54,7 @@ class GameCoordinatorService(Service):
         if player.is_disabled:
             raise Exception(f'User is disabled')
 
-        game_type      = resolve_kuhn_type(metadata['kuhn_type'])
+        game_type      = resolve_kuhn_type(metadata['game_type'])
         coordinator    = GameCoordinatorService.find_coordinator_instance(player, metadata['coordinator_id'], game_type)
         coordinator_id = coordinator.id
 
