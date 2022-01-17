@@ -2,6 +2,7 @@ import threading
 import queue
 import random
 import logging
+import time
 import traceback
 
 from typing import List
@@ -119,7 +120,7 @@ class KuhnGame(object):
                 except queue.Empty:
                     if self.is_finished():
                         return
-                    raise Exception(f'There was no message from a player for more than { KuhnGame.MessagesTimeout } sec.')
+                    raise Exception(f'There was no message from player for more than { KuhnGame.MessagesTimeout } sec.')
 
         except Exception as e:
             traceback.print_exc()
@@ -149,27 +150,31 @@ class KuhnGame(object):
         return [ self.player1, self.player2 ]
 
     def get_player(self, player_token: str) -> KuhnGameLobbyPlayer:
-        if player_token == self.player1.player_token:
-            return self.player1
-        elif player_token == self.player2.player_token:
-            return self.player2
-        return None
+        with self.lock:
+            if player_token == self.player1.player_token:
+                return self.player1
+            elif player_token == self.player2.player_token:
+                return self.player2
+            return None
 
     def get_player_opponent(self, player_token: str) -> KuhnGameLobbyPlayer:
-        if player_token == self.player1.player_token:
-            return self.player2
-        elif player_token == self.player2.player_token:
-            return self.player1
-        return None
+        with self.lock:
+            if player_token == self.player1.player_token:
+                return self.player2
+            elif player_token == self.player2.player_token:
+                return self.player1
+            return None
 
     def get_random_player(self) -> str:
-        return random.choice(self.get_players())
+        with self.lock:
+            return random.choice(self.get_players())
 
     def get_winner_token(self) -> str:
-        for player in self.get_players():
-            if player.bank <= 0:
-                return self.get_player_opponent(player.player_token).player_token
-        return None
+        with self.lock:
+            for player in self.get_players():
+                if player.bank <= 0:
+                    return self.get_player_opponent(player.player_token).player_token
+            return None
 
     def get_outcome(self) -> str:
         return '|'.join(list(map(lambda _round: f'{_round.stage.inf_set()}:{_round.evaluation}', self.rounds[0:-1])))
@@ -184,66 +189,70 @@ class KuhnGame(object):
         return self.rounds[-1] if len(self.rounds) >= 1 else None
 
     def check_players_bank(self):
+        with self.lock:
         # Check if lobby can create a new round
         # True if both players have enough bank
         # False otherwise
-        for player in self.get_players():
-            if player.bank <= 0:
-                return False
-        return True
+            for player in self.get_players():
+                if player.bank <= 0:
+                    return False
+            return True
 
     def player_outcome(self, player_token):
-        player = self.get_player(player_token)
-        if player.bank <= 0:
-            return 'DEFEAT'
-        else:
-            return 'WIN'
+        with self.lock:
+            player = self.get_player(player_token)
+            if player.bank <= 0:
+                return 'DEFEAT'
+            else:
+                return 'WIN'
 
     def create_new_round(self):
-        last_round = self.get_last_round()
-        # Check if there was a round already and check if it was terminated
-        # Throw an error instead, in reality this error should never be raised since game coordinator
-        # creates a new round only on termination
-        if last_round is None or last_round.stage.is_terminal():
-            _first_player = self.get_player_opponent(last_round.first_player) if last_round is not None else self.get_random_player()
-            _round        = KuhnGameRound(first_player = _first_player.player_token, card_dealings = self.get_card_dealings())
-            self.rounds.append(_round)
-            self.logger.info(f'A new round has been created. First player is { _first_player }')
-            return _round
-        else:
-            self._logger.error('It is not allowed to start a new round while previous one is not completed')
-            raise Exception('It is not allowed to start a new round while previous one is not completed')
+        with self.lock:
+            last_round = self.get_last_round()
+            # Check if there was a round already and check if it was terminated
+            # Throw an error instead, in reality this error should never be raised since game coordinator
+            # creates a new round only on termination
+            if last_round is None or last_round.stage.is_terminal():
+                _first_player = self.get_player_opponent(last_round.first_player) if last_round is not None else self.get_random_player()
+                _round        = KuhnGameRound(first_player = _first_player.player_token, card_dealings = self.get_card_dealings())
+                self.rounds.append(_round)
+                self.logger.info(f'A new round has been created. First player is { _first_player }')
+                return _round
+            else:
+                self._logger.error('It is not allowed to start a new round while previous one is not completed')
+                raise Exception('It is not allowed to start a new round while previous one is not completed')
 
     def start_new_round(self, player_token):
-        # This function starts a new round for each player
-        # If player repeatedly sends 'START' messages this function won't do anything until a new round is created
-        last_round = self.get_last_round()
+        with self.lock:
+            # This function starts a new round for each player
+            # If player repeatedly sends 'START' messages this function won't do anything until a new round is created
+            last_round = self.get_last_round()
 
-        # Check if player already started this round and exit if it is true
-        if player_token in last_round.started and last_round.started[player_token] is True:
-            return
+            # Check if player already started this round and exit if it is true
+            if player_token in last_round.started and last_round.started[player_token] is True:
+                return
 
-        player = self.get_player(player_token)
-        last_round.started[player_token] = True
+            player = self.get_player(player_token)
+            last_round.started[player_token] = True
 
-        self.logger.info(f'Player { player_token } accepted new round')
+            self.logger.info(f'Player { player_token } accepted new round')
 
-        # First player (last_round.player_id_turn) starts the round
-        # Both players later on request a list of their available actions
-        if player.player_token == last_round.player_id_turn:
-            player.send_message(KuhnCoordinatorMessage(
-                KuhnCoordinatorEventTypes.CardDeal, 
-                card       = last_round.stage.card(0), 
-                turn_order = 1, 
-                actions    = [ CoordinatorActions.AvailableActions ]
-            ))
-        else:
-            player.send_message(KuhnCoordinatorMessage(
-                KuhnCoordinatorEventTypes.CardDeal, 
-                card       = last_round.stage.card(1), 
-                turn_order = 2, 
-                actions    = [ CoordinatorActions.AvailableActions ]
-            ))
+            # First player (last_round.player_id_turn) starts the round
+            # Both players later on request a list of their available actions
+            if player.player_token == last_round.player_id_turn:
+                player.send_message(KuhnCoordinatorMessage(
+                    KuhnCoordinatorEventTypes.CardDeal, 
+                    card       = last_round.stage.card(0), 
+                    turn_order = 1, 
+                    actions    = [ CoordinatorActions.AvailableActions ]
+                ))
+            else:
+                player.send_message(KuhnCoordinatorMessage(
+                    KuhnCoordinatorEventTypes.CardDeal, 
+                    card       = last_round.stage.card(1), 
+                    turn_order = 2, 
+                    actions    = [ CoordinatorActions.AvailableActions ]
+                ))
 
     def evaluate_round(self):
         # This function evaluate a round's outcome at the terminal stage

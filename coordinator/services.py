@@ -192,6 +192,9 @@ class GameCoordinatorService(Service):
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.GameResult, game_result = response.data['game_result'])
                             # In case of a `GameResult` event we expect lobby to send
                             # - error
+                            elif response.event == KuhnCoordinatorEventTypes.Close:
+                                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Close)
+                                coordinator.close()
                             elif response.event == KuhnCoordinatorEventTypes.Error:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = response.data['error'])
                                 coordinator.close(error = response.data['error'])
@@ -289,13 +292,14 @@ class GameCoordinatorService(Service):
             )
             if len(public_coordinators) != 0:
                 coordinator = public_coordinators[0] # We pick first available public coordinator
-                return GameCoordinatorService.coordinators[coordinator.id] # Coordinator must exist in service internal dict
+                return GameCoordinatorService.coordinators[ str(coordinator.id) ] # Coordinator must exist in service internal dict
             else:
                 # In case if game_id was random and there are no games available at the moment we create a new one
                 return GameCoordinatorService.add_coordinator(KuhnCoordinator(
                     coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER,
                     game_type        = game_type,
                     capacity         = 2,
+                    timeout          = settings.COORDINATOR_CONNECTION_TIMEOUT,
                     is_private       = False
                 ))
         else:

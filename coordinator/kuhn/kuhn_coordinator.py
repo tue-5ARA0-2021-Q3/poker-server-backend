@@ -187,6 +187,7 @@ class KuhnCoordinator(object):
                     game    = self.play_duel(players)
                     if game.error != None:
                         raise Exception(game.error)
+                    self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Close))
                 elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
                     raise Exception('Tournament mode is not implemented')
                 else:
@@ -205,11 +206,13 @@ class KuhnCoordinator(object):
         if len(players) != 2:
             raise Exception(f'Invalid number of players in duel setup. len(players) = { len(players) }')
 
+
         player_tokens = list(map(lambda player: str(player.token), players))
+
         player1 = KuhnGameLobbyPlayer(player_tokens[0], KuhnGame.InitialBank, self.waiting_room.get_player_channel(player_tokens[0]))
         player2 = KuhnGameLobbyPlayer(player_tokens[1], KuhnGame.InitialBank, self.waiting_room.get_player_channel(player_tokens[1]))
         game    = KuhnGame(self, player1, player2, self.game_type, self.channel)
-
         game.play()
+
         return game
 

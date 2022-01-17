@@ -2,6 +2,10 @@
 # Player communicates with a lobby with `KuhnGameLobbyPlayerMessage` object
 # It has a `player_id` field and a corresponding `action` field in a form of a string
 # Lobby has to check if `action` contains an available valid action later on
+import threading
+import time
+
+
 class KuhnGameLobbyPlayerMessage(object):
 
     def __init__(self, player_id, action):
@@ -25,4 +29,7 @@ class KuhnGameLobbyPlayer(object):
         self.channel      = channel
 
     def send_message(self, message):
+        # TODO: Thread lock - race condition?
+        time.sleep(0.001) # Iffy fix
         self.channel.put(message)
+            
