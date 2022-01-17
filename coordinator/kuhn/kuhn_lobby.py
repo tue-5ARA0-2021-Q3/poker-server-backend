@@ -94,20 +94,19 @@ class KuhnGameRound(object):
 
 
 class KuhnGameLobby(object):
-    InitialBank = settings.LOBBY_INITIAL_BANK
-    MessagesTimeout = settings.LOBBY_WAITING_TIMEOUT
-    BotCreationDelay = settings.BOT_CREATION_DELAY
+    InitialBank = settings.KUHN_GAME_INITIAL_BANK
+    MessagesTimeout = settings.COORDINATOR_WAITING_TIMEOUT
     LobbyBots = []
 
     # Here we check is bots are enabled in server settings
     # Routine picks up `BOT_FOLDER` setting variable, iterates over subfolders,
     # checks for main.py, and adds bot executables paths in `GameCoordinatorService.game_bots`
-    if settings.ALLOW_BOTS:
-        for folder in os.listdir(settings.BOT_FOLDER):
-            bot_exec = os.path.join(settings.BOT_FOLDER, folder, 'main.py')
-            if os.path.isfile(bot_exec):
-                print('Bot found: ', folder)
-                LobbyBots.append(bot_exec)
+    # if settings.ALLOW_BOTS:
+    #     for folder in os.listdir(settings.BOT_FOLDER):
+    #         bot_exec = os.path.join(settings.BOT_FOLDER, folder, 'main.py')
+    #         if os.path.isfile(bot_exec):
+    #             print('Bot found: ', folder)
+    #             LobbyBots.append(bot_exec)
 
     class GameLobbyFullError(Exception):
         pass
@@ -246,7 +245,7 @@ class KuhnGameLobby(object):
 
     def wait_for_players(self):
         try:
-            self._player_connection_barrier.wait(timeout = settings.LOBBY_CONNECTION_TIMEOUT)
+            self._player_connection_barrier.wait(timeout = settings.COORDINATOR_CONNECTION_TIMEOUT)
         except threading.BrokenBarrierError:
             self._logger.error('Timeout waiting for another player to connect')
             raise Exception('Timeout waiting for another player to connect')

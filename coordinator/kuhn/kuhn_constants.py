@@ -24,6 +24,12 @@ KUHN_TYPES = {
     'CARD4': CARD4
 }
 
+def resolve_kuhn_type(kuhn_type) -> int:
+    try:
+        return KUHN_TYPES[kuhn_type]
+    except KeyError:
+        raise Exception('Unknown Kuhn poker game type: {kuhn_type}')
+
 KUHN_TYPE_TO_STR = {
     CARD3: '3',
     CARD4: '4'

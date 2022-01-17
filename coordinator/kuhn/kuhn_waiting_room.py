@@ -53,9 +53,9 @@ class KuhnWaitingRoom(object):
         with self.lock: 
             return list(self.player_channels.keys())
 
-    def get_player_channel(self, player_id: str) -> queue.Queue:
+    def get_player_channel(self, player_token: str) -> queue.Queue:
         with self.lock:
-            return self.player_channels[player_id]
+            return self.player_channels[player_token]
 
     def get_room_capacity(self) -> int:
         return self.capacity
@@ -64,9 +64,9 @@ class KuhnWaitingRoom(object):
         with self.lock:
             return len(self.player_channels)
 
-    def is_player_registered(self, player_id: str) -> bool:
+    def is_player_registered(self, player_token: str) -> bool:
         with self.lock:
-            return player_id in self.player_channels
+            return player_token in self.player_channels
 
     def wait_ready(self) -> bool:
         return self.ready.wait(timeout = self.timeout)
@@ -92,7 +92,7 @@ class KuhnWaitingRoom(object):
                 self.closed = True
                 self.ready.set()
 
-    def register_player(self, player_id: str):
+    def register_player(self, player_token: str):
         with self.lock:
             # Check if lobby is closed for registrations
             if self.is_ready() or self.is_closed():
@@ -103,13 +103,13 @@ class KuhnWaitingRoom(object):
                 raise KuhnWaitingRoom.WaitingRoomIsFull('Waiting room is full')
 
             # Check if player already has been registered for this lobby
-            if self.is_player_registered(player_id):
+            if self.is_player_registered(player_token):
                 raise KuhnWaitingRoom.PlayerDoubleRegistration('Player with the same id has been already registered in this waiting room')
 
             # For each new registration we keep a record in the server's database for logging purposes
             registration = RoomRegistration(
                 room = WaitingRoom.objects.get(id = self.id), 
-                player = Player.objects.get(id = player_id)
+                player = Player.objects.get(token = player_token)
             )
 
             with transaction.atomic():
@@ -117,9 +117,9 @@ class KuhnWaitingRoom(object):
                 registration.save()
 
             # For each player we create a separate channel for messages between game coordinator and player
-            self.player_channels[player_id] = queue.Queue()
+            self.player_channels[player_token] = queue.Queue()
 
-            self.logger.info(f'Player { player_id } has been registered in the waiting room { self.id }')
+            self.logger.info(f'Player { player_token } has been registered in the waiting room { self.id }')
 
             # We do not expect the number of registered players to exceed room capacity, however, we do extra check here just to be sure
             # Should be unreachable

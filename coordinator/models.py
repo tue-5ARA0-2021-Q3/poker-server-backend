@@ -9,6 +9,8 @@ import random
 # Create your models here.
 from django.utils.timezone import now
 
+from coordinator.kuhn.kuhn_constants import CARD3, CARD4
+
 RandomUserNames = [
     'Unique Sandpiper',
     'Crazy Termite',
@@ -76,8 +78,8 @@ class PlayerTypes(IntEnum):
         return [(key.value, key.name) for key in cls]
 
 class GameTypes(IntEnum):
-    KUHN_CARD3 = 1
-    KUHN_CARD4 = 2
+    KUHN_CARD3 = CARD3
+    KUHN_CARD4 = CARD4
 
     @classmethod
     def choices(cls):
@@ -106,7 +108,6 @@ class GameCoordinator(models.Model):
     is_finished      = models.BooleanField(null = False, default = False)
     is_failed        = models.BooleanField(null = False, default = False)
     is_private       = models.BooleanField(null = False)
-    created_by       = models.ForeignKey(Player, on_delete = models.CASCADE, null = False)
     created_at       = models.DateTimeField(auto_now_add = True)
     game_type        = models.IntegerField(choices = GameTypes.choices(), null = False)
     error            = models.TextField(null = True)

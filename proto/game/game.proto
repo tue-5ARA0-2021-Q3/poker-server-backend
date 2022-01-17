@@ -4,7 +4,6 @@ package game;
 
 service GameCoordinatorController {
     rpc Create(CreateGameRequest) returns (CreateGameResponse) {}
-    rpc List(ListGameRequest) returns (ListGameResponse) {}
     rpc Play(stream PlayGameRequest) returns (stream PlayGameResponse) {}
 }
 
@@ -15,14 +14,6 @@ message CreateGameRequest {
 
 message CreateGameResponse {
     string id = 1;
-}
-
-message ListGameRequest {
-    string token = 1;
-}
-
-message ListGameResponse {
-    repeated string game_ids = 1;
 }
 
 message PlayGameRequest {
