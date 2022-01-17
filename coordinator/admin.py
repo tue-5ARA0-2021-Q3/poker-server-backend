@@ -10,14 +10,11 @@ class PlayerAdminModelView(admin.ModelAdmin):
     class Meta:
         model = Player
 
-# TODO adjust
 class GameAdminModelView(admin.ModelAdmin):
-    list_display = ('id', 'is_started', 'is_finished', 'is_failed', 'is_private', 'created_at', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'player_type')
-    list_filter = ('is_started', 'is_finished', 'is_failed', 'is_private', 'player_1', 'player_2', 'winner_id', 'kuhn_type', 'player_type')
+    list_display = ('id', 'created_by', 'created_at', 'is_started', 'is_finished', 'is_failed', 'player1', 'player2', 'winner', 'game_type', 'outcome', 'error')
+    list_filter = ('created_by', 'is_started', 'is_finished', 'is_failed', 'player1', 'player2', 'winner', 'game_type')
 
-    readonly_fields = ('is_started', 'is_finished', 'is_failed', 'is_private',
-                       'error', 'created_by', 'created_at', 'player_1', 'player_2', 'outcome',
-                       'winner_id', 'kuhn_type', 'player_type')
+    readonly_fields = ('id', 'created_by', 'created_at', 'is_started', 'is_finished', 'is_failed', 'player1', 'player2', 'winner', 'game_type', 'outcome', 'error')
 
     class Meta:
         model = Game

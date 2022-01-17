@@ -3,15 +3,14 @@ import queue
 import traceback
 import threading
 import logging
-from coordinator.kuhn.kuhn_constants import resolve_kuhn_type
+from coordinator.kuhn.kuhn_constants import resolve_kuhn_type, CoordinatorActions
 from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator, KuhnCoordinatorEventTypes, KuhnCoordinatorMessage
 
-from coordinator.kuhn.kuhn_game import KuhnGameLobby, CoordinatorActions
-from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer, KuhnGameLobbyPlayerMessage
+from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayerMessage
 
 from django_grpc_framework.services import Service
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
-from coordinator.models import Game, GameCoordinator, GameCoordinatorTypes, GameTypes, Player, PlayerTypes
+from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player
 from coordinator.utilities.card import Card
 from proto.game import game_pb2
 from django.conf import settings
@@ -161,7 +160,7 @@ class GameCoordinatorService(Service):
                                 turn_order = response.data['turn_order']
                                 card_rank  = response.data['card'] if settings.COORDINATOR_REVEAL_CARDS else '?'
                                 actions    = response.data['actions']
-                                card_image = Card(response.data['card'], lobby.get_valid_card_ranks()).get_image().tobytes('raw')
+                                card_image = Card(response.data['card']).get_image().tobytes('raw')
                                 yield game_pb2.PlayGameResponse(
                                     event = game_pb2.PlayGameResponse.PlayGameResponseEvent.CardDeal, 
                                     available_actions = actions, 

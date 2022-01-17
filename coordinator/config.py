@@ -16,7 +16,7 @@ class CoordinatorConfig(AppConfig):
                         test_player.save()
                 for player in list(Player.objects.filter(email = 'test@test')):
                     print(f'Test player token: {player.token}')
-            if settings.ALLOW_BOTS:
+            if settings.KUHN_ALLOW_BOTS:
                 bot_players = Player.objects.filter(is_bot = True)
                 if len(bot_players) == 0:
                     bot_player = Player(email = 'bot@bot', name = 'Bot (extreme hard)', is_bot = True)

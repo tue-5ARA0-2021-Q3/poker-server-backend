@@ -19,14 +19,10 @@ class KuhnGameLobbyPlayerMessage(object):
 # `lobby` is a reference to the lobby player is supposed to interact with
 class KuhnGameLobbyPlayer(object):
 
-    def __init__(self, player_id: str, bank: int, channel, lobby, log = True):
-        self.player_id = player_id
-        self.bank      = bank
-        self.channel   = channel
-        self.lobby     = lobby
-        self.log       = log
+    def __init__(self, token: str, bank: int, channel):
+        self.player_token = token
+        self.bank         = bank
+        self.channel      = channel
 
     def send_message(self, message):
         self.channel.put(message)
-        if self.log:
-            self.lobby.get_logger().info(f'Player { self.player_id } received { str(message) }')

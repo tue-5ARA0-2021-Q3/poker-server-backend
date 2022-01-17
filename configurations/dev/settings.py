@@ -59,6 +59,10 @@ LOGGING = {
             'handlers': [ 'console', 'file' ],
             'level': 'DEBUG'
         },
+        'kuhn.game': {
+            'handlers': [ 'console', 'file' ],
+            'level': 'DEBUG'
+        },
         'service.coordinator': {
             'handlers': [ 'console', 'file' ],
             'level': 'DEBUG'

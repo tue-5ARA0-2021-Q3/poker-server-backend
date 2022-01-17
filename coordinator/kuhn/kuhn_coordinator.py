@@ -1,39 +1,21 @@
 import queue
-from re import S
 import threading
 import logging
 import os
 import logging
 import subprocess
 import random
+import traceback
 from enum import Enum
 from typing import List
 
 from django.conf import settings
-from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR
+from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR, KuhnCoordinatorMessage, KuhnCoordinatorEventTypes
+from coordinator.kuhn.kuhn_game import KuhnGame
+from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 
-from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, WaitingRoom
-
-class KuhnCoordinatorEventTypes(Enum):
-    GameStart = 1
-    CardDeal = 2
-    NextAction = 3
-    RoundResult = 4
-    GameResult = 5
-    Close = 6
-    Error = 7
-
-# Coordinator communicates with a connected player with `KuhnCoordinatorMessage` object
-# It has an `event` field (see `KuhnCoordinatorEventTypes`) and a corresponding `data` object in a form of a dictionary
-class KuhnCoordinatorMessage(object):
-
-    def __init__(self, event, **kwargs):
-        self.event = event
-        self.data  = kwargs
-
-    def __str__(self):
-        return f'message(event = { self.event }, data = { self.data })'
+from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player
 
 class KuhnCoordinator(object):
     LobbyBots = []
@@ -202,22 +184,32 @@ class KuhnCoordinator(object):
                 if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT or self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER:
                     tokens  = self.waiting_room.get_player_tokens()
                     players = list(Player.objects.filter(token__in = tokens))
-                    self.play_duel(players)
-                else:
+                    game    = self.play_duel(players)
+                    if game.error != None:
+                        raise Exception(game.error)
+                elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
                     raise Exception('Tournament mode is not implemented')
-        
+                else:
+                    raise Exception(f'Unknown coordinator type { self.coordinator_type }')
             self.logger.debug(f'Coordinator { self.id } successfully finalized `run` procedure.')
         except Exception as e:
             # In case of any exception we simply notify all players about error in coordinator logic and close the session
             self.logger.error(f'Coordinator { self.id } failed during `run` procedure. Error: { str(e) }')
+            traceback.print_exc()
             self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Error, error = str(e)))
             self.close(error = str(e))
              # Just in case we mark it as ready here again, does nothing if coordinator has been marked as ready at this moment
             self.mark_as_ready()
 
-    def play_duel(self, player_tokens: List[str]) -> queue.Queue: 
+    def play_duel(self, players: List[Player]): 
+        if len(players) != 2:
+            raise Exception(f'Invalid number of players in duel setup. len(players) = { len(players) }')
 
-        if len(player_tokens) != 2:
-            raise Exception(f'Invalid number of players in duel setup. len(players) = { len(player_tokens) }')
+        player_tokens = list(map(lambda player: str(player.token), players))
+        player1 = KuhnGameLobbyPlayer(player_tokens[0], KuhnGame.InitialBank, self.waiting_room.get_player_channel(player_tokens[0]))
+        player2 = KuhnGameLobbyPlayer(player_tokens[1], KuhnGame.InitialBank, self.waiting_room.get_player_channel(player_tokens[1]))
+        game    = KuhnGame(self, player1, player2, self.game_type, self.channel)
 
-        raise Exception('Not implemented duel')
+        game.play()
+        return game
+

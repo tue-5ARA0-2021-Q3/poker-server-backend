@@ -1,3 +1,4 @@
+from enum import Enum
 
 # Types of Kuhn games
 CARD3 = 1 # Game with 3 cards
@@ -71,3 +72,30 @@ DEFEAT = "DEFEAT"
 
 A = 1
 B = -A
+
+class CoordinatorActions(str, Enum):
+    Connect = 'CONNECT'
+    NewRound = 'ROUND'
+    AvailableActions = 'AVAILABLE_ACTIONS'
+    Wait = 'WAIT'
+    IsAlive = 'IS_ALIVE'
+
+class KuhnCoordinatorEventTypes(Enum):
+    GameStart = 1
+    CardDeal = 2
+    NextAction = 3
+    RoundResult = 4
+    GameResult = 5
+    Close = 6
+    Error = 7
+
+# Coordinator communicates with a connected player with `KuhnCoordinatorMessage` object
+# It has an `event` field (see `KuhnCoordinatorEventTypes`) and a corresponding `data` object in a form of a dictionary
+class KuhnCoordinatorMessage(object):
+
+    def __init__(self, event, **kwargs):
+        self.event = event
+        self.data  = kwargs
+
+    def __str__(self):
+        return f'message(event = { self.event }, data = { self.data })'

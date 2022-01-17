@@ -18,13 +18,8 @@ class Card:
     NOISE_LEVEL = settings.CARD_GENERATED_IMAGE_NOISE_LEVEL
     ROTATE_MAX_ANGLE = settings.CARD_GENERATED_IMAGE_ROTATE_MAX_ANGLE
 
-    def __init__(self, rank, valid):
-        # Sanity check
-        if rank not in valid:
-            raise ValueError(f"Invalid rank: {rank}")
-
-        self.rank  = rank
-        self.valid = valid
+    def __init__(self, rank):
+        self.rank = rank
 
     def get_image(self, noise_level = None):
         if noise_level is None:
