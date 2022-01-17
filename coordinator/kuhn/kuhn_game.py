@@ -216,7 +216,7 @@ class KuhnGame(object):
                 _first_player = self.get_player_opponent(last_round.first_player) if last_round is not None else self.get_random_player()
                 _round        = KuhnGameRound(first_player = _first_player.player_token, card_dealings = self.get_card_dealings())
                 self.rounds.append(_round)
-                self.logger.info(f'A new round has been created. First player is { _first_player }')
+                self.logger.info(f'A new round has been created. First player is { _first_player.player_token }')
                 return _round
             else:
                 self._logger.error('It is not allowed to start a new round while previous one is not completed')
