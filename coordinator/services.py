@@ -207,7 +207,9 @@ class GameCoordinatorService(Service):
                             coordinator.logger.error(f'Coordinator has been finished while waiting for response from player.')
                             if coordinator.error != None:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = coordinator.error)
-                                return                
+                                return    
+
+                player_channel.task_done()            
 
             callback_active = False
 

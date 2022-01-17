@@ -29,7 +29,6 @@ class KuhnGameLobbyPlayer(object):
         self.channel      = channel
 
     def send_message(self, message):
-        # TODO: Thread lock - race condition?
-        time.sleep(0.001) # Iffy fix
         self.channel.put(message)
+        self.channel.join()
             
