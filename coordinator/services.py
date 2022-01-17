@@ -203,6 +203,9 @@ class GameCoordinatorService(Service):
                     except queue.Empty:
                         if coordinator.is_closed() and player_channel.empty():
                             coordinator.logger.error(f'Coordinator has been finished while waiting for response from player.')
+                            if coordinator.error != None:
+                                yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = coordinator.error)
+                                return                
 
             callback_active = False
 
@@ -238,6 +241,7 @@ class GameCoordinatorService(Service):
             if not coordinator.id in GameCoordinatorService.coordinators:
                 GameCoordinatorService.coordinators[coordinator.id] = coordinator
                 GameCoordinatorService.logger.info(f'Added game coordinator { coordinator.id }')
+                coordinator.mark_as_registered()
             else:
                 GameCoordinatorService.logger.warning(f'Trying to add the same game coordinator { coordinator.id }')
         return coordinator
@@ -300,6 +304,6 @@ class GameCoordinatorService(Service):
             coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER if not player.is_bot else GameCoordinatorTypes.DUEL_PLAYER_BOT
             candidates = GameCoordinator.objects.filter(id = coordinator_id, coordinator_type = coordinator_type, game_type = game_type)
             if len(candidates) != 0:
-                coordinator = candidates[0]
-                return GameCoordinatorService.coordinators[coordinator.id]
+                db_coordinator = candidates[0]
+                return GameCoordinatorService.coordinators[ str(db_coordinator.id) ]
             raise Exception(f'Coordinator instance with UUID { coordinator_id } has not been found') 

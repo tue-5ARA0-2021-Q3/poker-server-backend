@@ -55,6 +55,7 @@ class KuhnCoordinator(object):
         self.game_type        = game_type
         self.is_private       = is_private
         self.channel          = queue.Queue()
+        self.registered       = threading.Event()
         self.ready            = threading.Event()
         self.closed           = threading.Event()
         self.error            = None
@@ -72,6 +73,19 @@ class KuhnCoordinator(object):
         threading.Thread(target = self.add_bots).start()
 
         self.logger.info(f'Coordinator { self.id } has been created successfully')
+
+    def is_registered(self) -> bool:
+        with self.lock:
+            return self.registered.is_set()
+
+    def wait_registered(self) -> bool:
+        return self.registered.wait(timeout = settings.COORDINATOR_REGISTERED_TIMEOUT)
+
+    def mark_as_registered(self):
+        with self.lock:
+            if not self.is_registered():
+                self.logger.info(f'Game cordinator { self.id } has been marked as registered.')
+                self.registered.set()
 
     def is_ready(self) -> bool:
         with self.lock:
@@ -103,12 +117,18 @@ class KuhnCoordinator(object):
 
     def add_bots(self):
 
+        if not self.wait_registered():
+            self.logger.error(f'Coordinator { self.id } failed to initialize `add_bots` procedure. Coordinator has not been registered after timeout.')
+            return
+
+        self.logger.debug(f'Coordinator { self.id } initialized `add_bots` procedure.')
+
         if not settings.KUHN_ALLOW_BOTS:
             return
 
         if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS:
             return
-        
+
         bot_players = Player.objects.filter(is_bot = True)
 
         if len(bot_players) == 0:
@@ -121,11 +141,11 @@ class KuhnCoordinator(object):
             self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot implementations.')
 
         # In case of duel with a bot we instantiate bot thread immediatelly
-        if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER:
+        if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
             try: 
                 bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
                 self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
-                subprocess.run([ 'python', bot_exec, '--play', self.id, '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, capture_output = True)
+                subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, capture_output = True)
                 self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
             except Exception as e:
                 self.close(error = str(e))
@@ -136,7 +156,11 @@ class KuhnCoordinator(object):
 
     def run(self):
 
-        self.logger.info(f'Coordinator { self.id } initialized `run` loop.')
+        if not self.wait_registered():
+            self.logger.error(f'Coordinator { self.id } failed to initialize `run` procedure. Coordinator has not been registered after timeout.')
+            return
+
+        self.logger.debug(f'Coordinator { self.id } initialized `run` procedure.')
 
         # First we just wait for players to be registered
         is_ready = self.waiting_room.wait_ready()
@@ -157,7 +181,7 @@ class KuhnCoordinator(object):
             GameCoordinator.objects.filter(id = self.id).update(is_started = True)
             self.close(error = 'Not implemented')
     
-        self.logger.info(f'Coordinator { self.id } successfully finalized.')
+        self.logger.debug(f'Coordinator { self.id } successfully finalized `run` procedure.')
 
     @staticmethod
     def play_duel(player1: Player, player2: Player): 
