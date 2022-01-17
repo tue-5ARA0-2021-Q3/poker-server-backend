@@ -12,29 +12,8 @@ from coordinator.kuhn.kuhn_poker import KuhnRootChanceGameState
 from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR, KUHN_TYPES, CARDS_DEALINGS, POSSIBLE_CARDS
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.models import Game, Player, PlayerTypes
-from coordinator.utilities.logger import GameActionsLogger
 
 from enum import Enum
-
-class KuhnGameLobbyEvents(Enum):
-    GameStart = 1
-    CardDeal = 2
-    NextAction = 3
-    RoundResult = 4
-    GameResult = 5
-    Close = 6
-    Error = 7
-
-# Lobby communicates with a connected player with `KuhnGameLobbyMessage` object
-# It has an `event` field (see `KuhnGameLobbyEvents`) and a corresponding `data` object in a form of a dictionary
-class KuhnGameLobbyMessage(object):
-
-    def __init__(self, event, **kwargs):
-        self.event = event
-        self.data  = kwargs
-
-    def __str__(self):
-        return f'message(event = { self.event }, data = { self.data })'
 
 
 # `KuhnGameLobbyStage` is a game logic wrapper, see also `kuhn_game.py`
@@ -98,25 +77,6 @@ class KuhnGameLobby(object):
     MessagesTimeout = settings.COORDINATOR_WAITING_TIMEOUT
     LobbyBots = []
 
-    # Here we check is bots are enabled in server settings
-    # Routine picks up `BOT_FOLDER` setting variable, iterates over subfolders,
-    # checks for main.py, and adds bot executables paths in `GameCoordinatorService.game_bots`
-    # if settings.ALLOW_BOTS:
-    #     for folder in os.listdir(settings.BOT_FOLDER):
-    #         bot_exec = os.path.join(settings.BOT_FOLDER, folder, 'main.py')
-    #         if os.path.isfile(bot_exec):
-    #             print('Bot found: ', folder)
-    #             LobbyBots.append(bot_exec)
-
-    class GameLobbyFullError(Exception):
-        pass
-
-    class PlayerAlreadyExistError(Exception):
-        pass
-
-    class PlayerDisconnected(Exception):
-        pass
-
     def __init__(self, game_id: str, kuhn_type: int, player_type: int):
         self.lock = threading.Lock()
         self.game_id = game_id
@@ -176,79 +136,6 @@ class KuhnGameLobby(object):
 
     def get_card_dealings(self):
         return CARDS_DEALINGS[self.kuhn_type]
-
-    def start(self):
-        # First player which hits this function starts a separate thread with a game coordinator
-        # Ref: play_lobby(lobby)
-        with self.lock:
-            if self._lobby_coordinator_thread is None:
-                self._lobby_coordinator_thread = threading.Thread(target = game_lobby_coordinator,
-                                                                  args = (self, KuhnGameLobby.MessagesTimeout))
-                self._lobby_coordinator_thread.start()
-                self._logger.info('Lobby coordinator thread has been created')
-
-    def is_player_registered(self, player_id: str) -> bool:
-        return player_id in self.get_player_ids()
-
-    def register_player(self, player_id: str):
-        with self.lock:
-            # Check if lobby is already full or throw an exception otherwise
-            if self.get_num_players() >= 2:
-                raise KuhnGameLobby.GameLobbyFullError('Game lobby is full')
-
-            if self.is_player_registered(player_id):
-                raise KuhnGameLobby.PlayerAlreadyExistError('Player with the same id is already exist in this lobby')
-
-            # For each player we create a separate channel for messages between game coordinator and player
-            self._players[player_id] = KuhnGameLobbyPlayer(player_id, bank = KuhnGameLobby.InitialBank, channel = queue.Queue(), lobby = self)
-            self._logger.info(f'Player {player_id} has been registered in the lobby { self.game_id }')
-
-            if self.get_num_players() == 1:
-                player_ids = self.get_player_ids()
-                player1_id = player_ids[0]
-
-                game_db = Game.objects.get(id = self.game_id)
-                game_db.player_1 = player1_id
-                game_db.save(update_fields = ['player_1'])
-
-            # If we have one player connected to the lobby and lobby type is PLAYER_BOT we initiate new thread for a bot player
-            if self.get_num_players() == 1 and self.player_type == PlayerTypes.PLAYER_BOT:
-                if self._lobby_bot_thread is None:
-                    self._logger.info(f'Lobby {self.game_id} attempts to add a bot')
-                    bot_players = Player.objects.filter(is_bot = True)
-                    if len(bot_players) == 0:
-                        raise Exception('Could not find a bot player to play against')
-                    bot_player = bot_players[0]
-                    bot_token  = str(bot_player.token)
-                    if len(KuhnGameLobby.LobbyBots) == 0:
-                        raise Exception('Server has no bot implementations available.')
-                    bot_exec   = str(random.choice(KuhnGameLobby.LobbyBots))
-                    self._lobby_bot_thread = threading.Thread(target = game_bot, args = (self, bot_token, bot_exec, KuhnGameLobby.BotCreationDelay))
-                    self._lobby_bot_thread.start()
-                    self._logger.info('Lobby bot thread has been created')
-
-            # If both players are connected we set corresponding ids to self._player_opponent dictionary for easy lookup
-            if self.get_num_players() == 2:
-                player_ids = self.get_player_ids()
-                player1_id, player2_id = player_ids[0], player_ids[1]
-
-                self._player_opponent[player1_id] = player2_id
-                self._player_opponent[player2_id] = player1_id
-
-                # Update database entry of the game with corresponding player ids and mark it as started
-                game_db = Game.objects.get(id = self.game_id)
-                game_db.player_1 = player1_id
-                game_db.player_2 = player2_id
-                game_db.is_started = True
-                game_db.save(update_fields = ['player_1', 'player_2', 'is_started'])
-                self._logger.info(f'The game has been started')
-
-    def wait_for_players(self):
-        try:
-            self._player_connection_barrier.wait(timeout = settings.COORDINATOR_CONNECTION_TIMEOUT)
-        except threading.BrokenBarrierError:
-            self._logger.error('Timeout waiting for another player to connect')
-            raise Exception('Timeout waiting for another player to connect')
 
     def get_last_round(self):
         return self.rounds[-1] if len(self.rounds) >= 1 else None
@@ -380,22 +267,6 @@ class KuhnGameLobby(object):
     def is_finished(self) -> bool:
         with self.lock:
             return self._closed.is_set()
-
-    @staticmethod
-    def resolve_kuhn_type(kuhn_type) -> int:
-        try:
-            return KUHN_TYPES[kuhn_type]
-        except KeyError:
-            raise Exception('Unknown Kuhn poker game type: {kuhn_type}')
-
-def game_bot(lobby: KuhnGameLobby, bot_token: str, bot_exec: str, exec_delay: int):
-    try: 
-        lobby.get_logger().info(f'Executing bot for lobby {lobby.game_id} in {exec_delay} seconds')
-        time.sleep(exec_delay)
-        subprocess.run([ 'python', bot_exec, '--play', lobby.game_id, '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[lobby.kuhn_type] ], check = True, capture_output = True)
-        lobby.get_logger().info(f'Bot in lobby {lobby.game_id} exited.')
-    except Exception as e:
-        lobby.finish(error = str(e))
 
 class CoordinatorActions(str, Enum):
     Connect = 'CONNECT'

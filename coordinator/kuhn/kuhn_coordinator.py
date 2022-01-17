@@ -1,4 +1,5 @@
 import queue
+from re import S
 import threading
 import logging
 import os
@@ -6,6 +7,7 @@ import logging
 import subprocess
 import random
 from enum import Enum
+from typing import List
 
 from django.conf import settings
 from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR
@@ -14,8 +16,24 @@ from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, WaitingRoom
 
 class KuhnCoordinatorEventTypes(Enum):
-    Completed = 1
-    Error = 2
+    GameStart = 1
+    CardDeal = 2
+    NextAction = 3
+    RoundResult = 4
+    GameResult = 5
+    Close = 6
+    Error = 7
+
+# Coordinator communicates with a connected player with `KuhnCoordinatorMessage` object
+# It has an `event` field (see `KuhnCoordinatorEventTypes`) and a corresponding `data` object in a form of a dictionary
+class KuhnCoordinatorMessage(object):
+
+    def __init__(self, event, **kwargs):
+        self.event = event
+        self.data  = kwargs
+
+    def __str__(self):
+        return f'message(event = { self.event }, data = { self.data })'
 
 class KuhnCoordinator(object):
     LobbyBots = []
@@ -155,34 +173,51 @@ class KuhnCoordinator(object):
         return
 
     def run(self):
+        try:
+            if not self.wait_registered():
+                self.logger.error(f'Coordinator { self.id } failed to initialize `run` procedure. Coordinator has not been registered after timeout.')
+                return
 
-        if not self.wait_registered():
-            self.logger.error(f'Coordinator { self.id } failed to initialize `run` procedure. Coordinator has not been registered after timeout.')
-            return
+            self.logger.debug(f'Coordinator { self.id } initialized `run` procedure.')
 
-        self.logger.debug(f'Coordinator { self.id } initialized `run` procedure.')
+            # First we just wait for players to be registered
+            is_ready = self.waiting_room.wait_ready()
 
-        # First we just wait for players to be registered
-        is_ready = self.waiting_room.wait_ready()
+            # We do a series of checks here and in case of an error close coordinator without even starting any games
+            if self.waiting_room.is_closed():
+                self.close(error = 'Waiting room has been closed unexpectedly.')
+            elif not is_ready:
+                self.close(error = 'Waiting room have not enough players after timeout.')
+            
+            # We mark coordinator as ready at this point since upstream service waits for this signal
+            # However this event does not mean that coordinator is not closed
+            self.mark_as_ready()
 
-        # We do a series of checks here and in case of an error close coordinator without even starting any games
-        if self.waiting_room.is_closed():
-            self.close(error = 'Waiting room has been closed unexpectedly.')
-        elif not is_ready:
-            self.close(error = 'Waiting room have not enough players after timeout.')
+            # If coordinator has not been closed we proceed with a normal coordinator logic
+            # Otherwise it will be just finalized
+            if not self.is_closed():
+                GameCoordinator.objects.filter(id = self.id).update(is_started = True)
+
+                # In case of a duel setup we simply spawn one game thread and wait for it to finish redirecting any errors in case
+                if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT or self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER:
+                    tokens  = self.waiting_room.get_player_tokens()
+                    players = list(Player.objects.filter(token__in = tokens))
+                    self.play_duel(players)
+                else:
+                    raise Exception('Tournament mode is not implemented')
         
-        # We mark coordinator as ready at this point since upstream service waits for this signal
-        # However this event does not mean that coordinator is not closed
-        self.mark_as_ready()
+            self.logger.debug(f'Coordinator { self.id } successfully finalized `run` procedure.')
+        except Exception as e:
+            # In case of any exception we simply notify all players about error in coordinator logic and close the session
+            self.logger.error(f'Coordinator { self.id } failed during `run` procedure. Error: { str(e) }')
+            self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Error, error = str(e)))
+            self.close(error = str(e))
+             # Just in case we mark it as ready here again, does nothing if coordinator has been marked as ready at this moment
+            self.mark_as_ready()
 
-        # If coordinator has not been closed we proceed with a normal coordinator logic
-        # Otherwise it will be just finalized
-        if not self.is_closed():
-            GameCoordinator.objects.filter(id = self.id).update(is_started = True)
-            self.close(error = 'Not implemented')
-    
-        self.logger.debug(f'Coordinator { self.id } successfully finalized `run` procedure.')
+    def play_duel(self, player_tokens: List[str]) -> queue.Queue: 
 
-    @staticmethod
-    def play_duel(player1: Player, player2: Player): 
-        pass
+        if len(player_tokens) != 2:
+            raise Exception(f'Invalid number of players in duel setup. len(players) = { len(player_tokens) }')
+
+        raise Exception('Not implemented duel')

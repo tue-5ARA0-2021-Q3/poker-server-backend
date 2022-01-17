@@ -4,9 +4,9 @@ import traceback
 import threading
 import logging
 from coordinator.kuhn.kuhn_constants import resolve_kuhn_type
-from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator
+from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator, KuhnCoordinatorEventTypes, KuhnCoordinatorMessage
 
-from coordinator.kuhn.kuhn_lobby import KuhnGameLobby, KuhnGameLobbyEvents, KuhnGameLobbyMessage, CoordinatorActions
+from coordinator.kuhn.kuhn_game import KuhnGameLobby, CoordinatorActions
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer, KuhnGameLobbyPlayerMessage
 
 from django_grpc_framework.services import Service
@@ -145,8 +145,8 @@ class GameCoordinatorService(Service):
                 while (not coordinator.is_closed() and response is None) or not player_channel.empty():
                     try:
                         response = player_channel.get(timeout = settings.COORDINATOR_WAITING_TIMEOUT)
-                        if isinstance(response, KuhnGameLobbyMessage):
-                            if response.event == KuhnGameLobbyEvents.GameStart:
+                        if isinstance(response, KuhnCoordinatorMessage):
+                            if response.event == KuhnCoordinatorEventTypes.GameStart:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.GameStart)
                             # If response is a `CardDeal` we generate a new card based on its rank 
                             # and send the corresponding turn order, card rank (if enabled in server settings) and the image itself in a form of raw bytes
@@ -157,7 +157,7 @@ class GameCoordinatorService(Service):
                             # - turn_order
                             # - card
                             # - actions 
-                            elif response.event == KuhnGameLobbyEvents.CardDeal:
+                            elif response.event == KuhnCoordinatorEventTypes.CardDeal:
                                 turn_order = response.data['turn_order']
                                 card_rank  = response.data['card'] if settings.COORDINATOR_REVEAL_CARDS else '?'
                                 actions    = response.data['actions']
@@ -172,7 +172,7 @@ class GameCoordinatorService(Service):
                             # In case of a `NextAction` event we expect lobby to send
                             # - inf_set
                             # - actions
-                            elif response.event == KuhnGameLobbyEvents.NextAction:                                
+                            elif response.event == KuhnCoordinatorEventTypes.NextAction:                                
                                 yield game_pb2.PlayGameResponse(
                                     event = game_pb2.PlayGameResponse.PlayGameResponseEvent.NextAction,
                                     inf_set           = response.data['inf_set'],
@@ -181,7 +181,7 @@ class GameCoordinatorService(Service):
                             # In case of a `RoundResult` event we expect lobby to send
                             # - evaluation
                             # - inf_set
-                            elif response.event == KuhnGameLobbyEvents.RoundResult:
+                            elif response.event == KuhnCoordinatorEventTypes.RoundResult:
                                 yield game_pb2.PlayGameResponse(
                                     event = game_pb2.PlayGameResponse.PlayGameResponseEvent.RoundResult,
                                     round_evaluation = response.data['evaluation'],
@@ -189,11 +189,11 @@ class GameCoordinatorService(Service):
                                 )
                             # In case of a `GameResult` event we expect lobby to send
                             # - game_result
-                            elif response.event == KuhnGameLobbyEvents.GameResult:
+                            elif response.event == KuhnCoordinatorEventTypes.GameResult:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.GameResult, game_result = response.data['game_result'])
                             # In case of a `GameResult` event we expect lobby to send
                             # - error
-                            elif response.event == KuhnGameLobbyEvents.Error:
+                            elif response.event == KuhnCoordinatorEventTypes.Error:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = response.data['error'])
                                 coordinator.close(error = response.data['error'])
                             else:

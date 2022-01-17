@@ -46,10 +46,8 @@ class KuhnWaitingRoom(object):
         self.logger          = logging.getLogger('kuhn.waiting')
 
         self.logger.info(f'Waiting room { self.id } has been created sucessfully.')
-
-        
     
-    def get_player_ids(self) -> List[str]:
+    def get_player_tokens(self) -> List[str]:
         with self.lock: 
             return list(self.player_channels.keys())
 
@@ -67,6 +65,11 @@ class KuhnWaitingRoom(object):
     def is_player_registered(self, player_token: str) -> bool:
         with self.lock:
             return player_token in self.player_channels
+
+    def notify_all_players(self, message):
+        with self.lock:
+            for player_channel in self.player_channels.values():
+                player_channel.put(message)
 
     def wait_ready(self) -> bool:
         return self.ready.wait(timeout = self.timeout)
@@ -133,47 +136,3 @@ class KuhnWaitingRoom(object):
                 self.mark_as_ready()
                 self.logger.info(f'Waiting room { self.id } marked as ready.')
                 return
-
-
-            # TODO move to coordinator
-            # if self.get_num_players() == 1:
-            #     player_ids = self.get_player_ids()
-            #     player1_id = player_ids[0]
-
-            #     game_db = Game.objects.get(id = self.game_id)
-            #     game_db.player_1 = player1_id
-            #     game_db.save(update_fields = ['player_1'])
-
-            # TODO move to coordinator
-            # If we have one player connected to the lobby and lobby type is PLAYER_BOT we initiate new thread for a bot player
-            # if self.get_num_players() == 1 and self.player_type == PlayerTypes.PLAYER_BOT:
-            #     if self._lobby_bot_thread is None:
-            #         self._logger.info(f'Lobby {self.game_id} attempts to add a bot')
-            #         bot_players = Player.objects.filter(is_bot = True)
-            #         if len(bot_players) == 0:
-            #             raise Exception('Could not find a bot player to play against')
-            #         bot_player = bot_players[0]
-            #         bot_token  = str(bot_player.token)
-            #         if len(KuhnGameLobby.LobbyBots) == 0:
-            #             raise Exception('Server has no bot implementations available.')
-            #         bot_exec   = str(random.choice(KuhnGameLobby.LobbyBots))
-            #         self._lobby_bot_thread = threading.Thread(target = game_bot, args = (self, bot_token, bot_exec, KuhnGameLobby.BotCreationDelay))
-            #         self._lobby_bot_thread.start()
-            #         self._logger.info('Lobby bot thread has been created')
-
-            # TODO move to coordinator
-            # If both players are connected we set corresponding ids to self._player_opponent dictionary for easy lookup
-            # if self.get_num_players() == 2:
-            #     player_ids = self.get_player_ids()
-            #     player1_id, player2_id = player_ids[0], player_ids[1]
-
-            #     self._player_opponent[player1_id] = player2_id
-            #     self._player_opponent[player2_id] = player1_id
-
-            #     # Update database entry of the game with corresponding player ids and mark it as started
-            #     game_db = Game.objects.get(id = self.game_id)
-            #     game_db.player_1 = player1_id
-            #     game_db.player_2 = player2_id
-            #     game_db.is_started = True
-            #     game_db.save(update_fields = ['player_1', 'player_2', 'is_started'])
-            #     self._logger.info(f'The game has been started')

@@ -68,7 +68,6 @@ class Player(models.Model):
     is_bot       = models.BooleanField(null = False, default = False)
 
 
-
 class PlayerTypes(IntEnum):
     PLAYER_BOT = 1
     PLAYER_PLAYER = 2
@@ -156,21 +155,4 @@ class GameRound(models.Model):
     state       = models.CharField(max_length = 64, null = False)
     actions     = models.CharField(max_length = 128, null = False)
     evaluation  = models.IntegerField(null = True)
-
-class GameLogTypes(IntEnum):
-    INFO = 1
-    WARN = 2
-    ERROR = 3
-
-    @classmethod
-    def choices(cls):
-        return [(key.value, key.name) for key in cls]
-
-
-class GameLog(models.Model):
-    game_id = models.UUIDField(editable = False)
-    index = models.IntegerField(null = False, editable = False)
-    created_at = models.DateTimeField(default = now, editable = False)
-    type = models.IntegerField(choices = GameLogTypes.choices(), null = False)
-    content = models.TextField(null = False, editable = False)
 
