@@ -20,9 +20,11 @@ COORDINATOR_READY_TIMEOUT = 100 # 100 sec
 # We do not expect to hit this timeout setting, so we set it larger than the others
 COORDINATOR_REGISTERED_TIMEOUT = 100 # 100 sec
 
-COORDINATOR_WAITING_TIMEOUT = 10  # 10 sec
-COORDINATOR_CONNECTION_TIMEOUT = 5  # 5 sec
-COORDINATOR_INTERVAL_CHECK = 60 # 60 sec
+# This option configures timeout for an agent to make an action
+COORDINATOR_WAITING_TIMEOUT = 5  # 5 sec
+
+# This option configures timeout for a waiting room connection
+COORDINATOR_CONNECTION_TIMEOUT = 10  # 5 sec
 
 KUHN_GAME_INITIAL_BANK = 5
 KUHN_ALLOW_BOTS = True
