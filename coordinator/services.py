@@ -69,8 +69,10 @@ class GameCoordinatorService(Service):
         def GRPCConnectionTerminationCallback():
             if callback_active:
                 if coordinator.waiting_room.is_player_registered(token) and not coordinator.is_closed():
-                    coordinator.close(error = f'Coordinator has been terminated before it finished. Another player possibly has disconnected from the game due to an exception.')
-                    GameCoordinatorService.remove_coordinator(coordinator)
+                    coordinator.waiting_room.mark_as_disconnected(token)
+                    coordinator.channel.put(KuhnGameLobbyPlayerMessage(token, CoordinatorActions.Disconnected))
+                    # coordinator.close(error = f'Coordinator has been terminated before it finished. Another player possibly has disconnected from the game due to an exception.')
+                    # GameCoordinatorService.remove_coordinator(coordinator)
 
         context.add_callback(GRPCConnectionTerminationCallback)
 
@@ -168,7 +170,7 @@ class GameCoordinatorService(Service):
                                     card_rank  = card_rank,
                                     card_image = card_image
                                 )
-                            # In case of `InvalidAction` or `OpponentInvalidAction` events we expect lobby to send
+                            # In case of `InvalidAction` or `OpponentInvalidAction` or `OpponentDisconnected` events we expect lobby to send
                             # - actions
                             elif response.event == KuhnCoordinatorEventTypes.InvalidAction:
                                 yield game_pb2.PlayGameResponse(
@@ -178,6 +180,11 @@ class GameCoordinatorService(Service):
                             elif response.event == KuhnCoordinatorEventTypes.OpponentInvalidAction:
                                 yield game_pb2.PlayGameResponse(
                                     event = game_pb2.PlayGameResponse.PlayGameResponseEvent.OpponentInvalidAction,
+                                    available_actions = response.data['actions']
+                                )
+                            elif response.event == KuhnCoordinatorEventTypes.OpponentDisconnected:
+                                yield game_pb2.PlayGameResponse(
+                                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.OpponentDisconnected,
                                     available_actions = response.data['actions']
                                 )
                             # In case of a `NextAction` event we expect lobby to send

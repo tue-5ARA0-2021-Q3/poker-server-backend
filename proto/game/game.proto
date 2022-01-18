@@ -25,14 +25,15 @@ message PlayGameResponse {
         Nothing = 0;
         CardDeal = 1;
         NextAction = 2;
-        InvalidAction = 3;
-        OpponentInvalidAction = 4;
-        GameStart = 5;
-        RoundResult = 6;
-        GameResult = 7;
-        Close = 8;
-        UpdateCoordinatorId = 9;
-        Error = 10;
+        GameStart = 3;
+        RoundResult = 4;
+        GameResult = 5;
+        Close = 6;
+        UpdateCoordinatorId = 7;
+        InvalidAction = 8;
+        OpponentInvalidAction = 9;
+        OpponentDisconnected = 10;
+        Error = 11;
     }
     PlayGameResponseEvent event = 1;
     repeated string available_actions = 2;

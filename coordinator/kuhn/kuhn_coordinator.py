@@ -149,6 +149,7 @@ class KuhnCoordinator(object):
                 self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
             except Exception as e:
                 self.close(error = str(e))
+                return 
         elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
             self.close(error = 'Not implemented: GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS')
 

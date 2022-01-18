@@ -41,6 +41,7 @@ class KuhnWaitingRoom(object):
         self.capacity        = capacity
         self.timeout         = timeout
         self.player_channels = {}
+        self.disconnected    = {}
         self.ready           = threading.Event()
         self.closed          = False
         self.logger          = logging.getLogger('kuhn.waiting')
@@ -95,6 +96,15 @@ class KuhnWaitingRoom(object):
                 self.closed = True
                 self.ready.set()
 
+    def is_disconnected(self, player_token: str) -> bool:
+        with self.lock:
+            return self.disconnected[player_token]
+
+    def mark_as_disconnected(self, player_token: str):
+        with self.lock:
+            self.disconnected[player_token] = True
+
+
     def register_player(self, player_token: str):
         with self.lock:
             # Check if lobby is closed for registrations
@@ -121,6 +131,7 @@ class KuhnWaitingRoom(object):
 
             # For each player we create a separate channel for messages between game coordinator and player
             self.player_channels[player_token] = queue.Queue()
+            self.disconnected[player_token] = False
 
             self.logger.info(f'Player { player_token } has been registered in the waiting room { self.id }')
 

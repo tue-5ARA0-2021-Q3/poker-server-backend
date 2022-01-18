@@ -58,9 +58,21 @@ class KuhnGame(object):
 
                     self.logger.info(f'Received message from player { message.player_token }: { message.action }')
 
-                    # First we check if the message is about to start a new round
+                    disconnected = self.check_any_disconnected()
+
+                    #  First we check if someone disconnected and end the game
+                    if disconnected is not None and not self.is_finished():
+                        self.logger.warning(f'Player { disconnected.player_token } has been disconnected from running game { self.id }.')
+                        # We force finish we game, the player whoвшысщттусеув loses the entire game
+                        opponent = self.get_player_opponent(disconnected.player_token)
+                        self.force_winner(opponent.player_token)
+                        self.finish()
+                        # Notify remaining player about the result of the game
+                        opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentDisconnected, actions = [ CoordinatorActions.Wait ]))
+                        opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameResult, game_result = self.player_outcome(opponent.player_token)))
+                    # We check if the message is about to start a new round
                     # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
-                    if message.action == CoordinatorActions.NewRound:
+                    elif message.action == CoordinatorActions.NewRound:
                         if self.check_players_bank():
                             self.start_new_round(message.player_token)
                         else:
@@ -69,7 +81,7 @@ class KuhnGame(object):
                                 KuhnCoordinatorEventTypes.GameResult, 
                                 game_result = self.player_outcome(message.player_token)
                             ))
-                    # Second we chand if player requests a list of available actions for him
+                    # Second we check if player requests a list of available actions
                     # That usually happens right after card deal event
                     elif message.action == CoordinatorActions.AvailableActions:
                         player  = self.get_player(message.player_token)
@@ -105,18 +117,19 @@ class KuhnGame(object):
                             ))
                     # In case if player made an invalid action we force finish the game
                     elif message.player_token == current_round.player_token_turn and not message.action in current_round.stage.actions():
-                        # We first notify both players that invalid action has been made
-                        self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
-                        self.get_player_opponent(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentInvalidAction, actions = [ CoordinatorActions.Wait ]))
-                        # We force finish we game, the player who made an invalid actions loses the entire game
-                        self.force_winner(self.get_player_opponent(message.player_token).player_token)
-                        self.finish()
-                        # Notify player about the result of the game
-                        for player in self.get_players():
-                            player.send_message(KuhnCoordinatorMessage(
-                                KuhnCoordinatorEventTypes.GameResult, 
-                                game_result = self.player_outcome(player.player_token)
-                            ))
+                        if not self.is_finished():
+                            # We first notify both players that invalid action has been made
+                            self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                            self.get_player_opponent(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentInvalidAction, actions = [ CoordinatorActions.Wait ]))
+                            # We force finish we game, the player who made an invalid actions loses the entire game
+                            self.force_winner(self.get_player_opponent(message.player_token).player_token)
+                            self.finish()
+                            # Notify player about the result of the game
+                            for player in self.get_players():
+                                player.send_message(KuhnCoordinatorMessage(
+                                    KuhnCoordinatorEventTypes.GameResult, 
+                                    game_result = self.player_outcome(player.player_token)
+                                ))
                     else:
                         self.logger.warning(f'Unexpected message from player = { message.player_token }: [ action = {message.action} ]')
                         continue
@@ -151,7 +164,15 @@ class KuhnGame(object):
                 self.finished.set()
 
     def get_players(self) -> List[KuhnGameLobbyPlayer]:
-        return [ self.player1, self.player2 ]
+        with self.lock:
+            return list(filter(lambda player: not self.coordinator.waiting_room.is_disconnected(player.player_token), [ self.player1, self.player2 ]))
+
+    def check_any_disconnected(self) -> KuhnGameLobbyPlayer:
+        if self.coordinator.waiting_room.is_disconnected(self.player1.player_token):
+            return self.player1
+        if self.coordinator.waiting_room.is_disconnected(self.player2.player_token):
+            return self.player2
+        return None
 
     def get_player(self, player_token: str) -> KuhnGameLobbyPlayer:
         with self.lock:
@@ -204,6 +225,8 @@ class KuhnGame(object):
 
     def player_outcome(self, player_token):
         with self.lock:
+            if self.error != None:
+                return 'ERROR'
             player = self.get_player(player_token)
             if player.bank <= 0:
                 return 'DEFEAT'
