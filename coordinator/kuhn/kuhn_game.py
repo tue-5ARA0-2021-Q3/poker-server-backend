@@ -56,24 +56,24 @@ class KuhnGame(object):
                     # Game coordinator waits for a message from any player
                     message = self.channel.get(timeout = KuhnGame.MessagesTimeout)
 
-                    self.logger.info(f'Received message from player { message.player_id }: { message.action }')
+                    self.logger.info(f'Received message from player { message.player_token }: { message.action }')
 
                     # First we check if the message is about to start a new round
                     # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
                     if message.action == CoordinatorActions.NewRound:
                         if self.check_players_bank():
-                            self.start_new_round(message.player_id)
+                            self.start_new_round(message.player_token)
                         else:
                             self.finish()
-                            self.get_player(message.player_id).send_message(KuhnCoordinatorMessage(
+                            self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(
                                 KuhnCoordinatorEventTypes.GameResult, 
-                                game_result = self.player_outcome(message.player_id)
+                                game_result = self.player_outcome(message.player_token)
                             ))
                     # Second we chand if player requests a list of available actions for him
                     # That usually happens right after card deal event
                     elif message.action == CoordinatorActions.AvailableActions:
-                        player = self.get_player(message.player_id)
-                        if player.player_token == current_round.player_id_turn:
+                        player = self.get_player(message.player_token)
+                        if player.player_token == current_round.player_token_turn:
                             player.send_message(KuhnCoordinatorMessage(
                                 KuhnCoordinatorEventTypes.NextAction, 
                                 inf_set = current_round.stage.public_inf_set(), 
@@ -89,9 +89,10 @@ class KuhnGame(object):
                     elif message.action == CoordinatorActions.Wait:
                         continue
                     # If message action is not 'START' we check that the message came from a player and assume it is their next action
-                    elif message.player_id == current_round.player_id_turn:
+                    elif message.player_token == current_round.player_token_turn:
                         # We register current player's action in an inner stage object
                         
+                        # TODO CHECK if action is valid
                         current_round.stage.play(message.action)
 
                         if current_round.stage.is_terminal():
@@ -107,14 +108,14 @@ class KuhnGame(object):
                             current_round = self.create_new_round()
                         else:
                             # If the stage is not terminal we swap current's player id and wait for a new action of second player
-                            current_round.player_id_turn = self.get_player_opponent(current_round.player_id_turn).player_token
-                            self.get_player(current_round.player_id_turn).send_message(KuhnCoordinatorMessage(
+                            current_roundtoken_turn = self.get_player_opponent(current_round.player_token_turn).player_token
+                            self.get_player(current_round.player_token_turn).send_message(KuhnCoordinatorMessage(
                                 KuhnCoordinatorEventTypes.NextAction,
                                 inf_set = current_round.stage.public_inf_set(), 
                                 actions = current_round.stage.actions()
                             ))
                     else:
-                        print(f'Warn: unexpected message from player_id = { message.player_id }: [ action = {message.action} ]')
+                        print(f'Warn: unexpected message from player = { message.player_token }: [ action = {message.action} ]')
                         continue
 
                 except queue.Empty:
@@ -237,9 +238,9 @@ class KuhnGame(object):
 
             self.logger.info(f'Player { player_token } accepted new round')
 
-            # First player (last_round.player_id_turn) starts the round
+            # First player (last_round.player_token_turn) starts the round
             # Both players later on request a list of their available actions
-            if player.player_token == last_round.player_id_turn:
+            if player.player_token == last_round.player_token_turn:
                 player.send_message(KuhnCoordinatorMessage(
                     KuhnCoordinatorEventTypes.CardDeal, 
                     card       = last_round.stage.card(0), 
@@ -332,10 +333,10 @@ class KuhnGameLobbyStage(object):
 class KuhnGameRound(object):
 
     def __init__(self, first_player, card_dealings):
-        self.stage          = KuhnGameLobbyStage(card_dealings)
-        self.started        = {}
-        self.evaluation     = 0
-        self.is_evaluated   = False
-        self.first_player   = first_player
-        self.player_id_turn = self.first_player
+        self.stage             = KuhnGameLobbyStage(card_dealings)
+        self.started           = {}
+        self.evaluation        = 0
+        self.is_evaluated      = False
+        self.first_player      = first_player
+        self.player_token_turn = self.first_player
 
