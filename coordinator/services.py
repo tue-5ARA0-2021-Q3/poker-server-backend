@@ -1,5 +1,6 @@
 from curses import meta
 import queue
+import time
 import traceback
 import threading
 import logging
@@ -21,6 +22,20 @@ class GameCoordinatorService(Service):
     coordinators = {}
     lock         = threading.Lock()
     logger       = logging.getLogger('service.coordinator')
+
+    # noinspection PyPep8Naming,PyMethodMayBeStatic
+    def Rename(self, request, context):
+        player = Player.objects.get(token = request.token)
+
+        if player.is_disabled:
+            raise Exception(f'User is disabled')
+
+        if len(request.name) >= 128:
+            return game_pb2.PlayerRenameResponse(response = 'New name must not exceed 128 characters.')
+        
+        Player.objects.filter(token = request.token).update(name = request.name)
+
+        return game_pb2.PlayerRenameResponse(response = 'Updated successfully.')
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Create(self, request, context):
@@ -71,8 +86,6 @@ class GameCoordinatorService(Service):
                 if coordinator.waiting_room.is_player_registered(token) and not coordinator.is_closed():
                     coordinator.waiting_room.mark_as_disconnected(token)
                     coordinator.channel.put(KuhnGameLobbyPlayerMessage(token, CoordinatorActions.Disconnected))
-                    # coordinator.close(error = f'Coordinator has been terminated before it finished. Another player possibly has disconnected from the game due to an exception.')
-                    # GameCoordinatorService.remove_coordinator(coordinator)
 
         context.add_callback(GRPCConnectionTerminationCallback)
 
