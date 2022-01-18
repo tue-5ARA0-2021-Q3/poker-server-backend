@@ -72,29 +72,18 @@ class KuhnGame(object):
                     # Second we chand if player requests a list of available actions for him
                     # That usually happens right after card deal event
                     elif message.action == CoordinatorActions.AvailableActions:
-                        player = self.get_player(message.player_token)
-                        if player.player_token == current_round.player_token_turn:
-                            player.send_message(KuhnCoordinatorMessage(
-                                KuhnCoordinatorEventTypes.NextAction, 
-                                inf_set = current_round.stage.public_inf_set(), 
-                                actions = current_round.stage.actions()
-                            ))
-                        else:
-                            player.send_message(KuhnCoordinatorMessage(
-                                KuhnCoordinatorEventTypes.NextAction, 
-                                inf_set = current_round.stage.public_inf_set(), 
-                                actions = [ CoordinatorActions.Wait ]
-                            ))
+                        player  = self.get_player(message.player_token)
+                        inf_set = current_round.stage.public_inf_set()
+                        actions = current_round.stage.actions() if player.player_token == current_round.player_token_turn else [ CoordinatorActions.Wait ]
+                        player.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.NextAction, inf_set = inf_set, actions = actions))
                     # Wait is an utility message
                     elif message.action == CoordinatorActions.Wait:
                         continue
                     # If message action is not 'START' we check that the message came from a player and assume it is their next action
-                    elif message.player_token == current_round.player_token_turn:
+                    # We also check if action is valid here and if not we force finishing of the game
+                    elif message.player_token == current_round.player_token_turn and message.action in current_round.stage.actions():
                         # We register current player's action in an inner stage object
-                        
-                        # TODO CHECK if action is valid
                         current_round.stage.play(message.action)
-
                         if current_round.stage.is_terminal():
                             # If the stage is terminal we notify both players and we always start a new round even if ssome player has a negative bank
                             # However we always check players banks in the beginning of each round
@@ -108,14 +97,28 @@ class KuhnGame(object):
                             current_round = self.create_new_round()
                         else:
                             # If the stage is not terminal we swap current's player id and wait for a new action of second player
-                            current_roundtoken_turn = self.get_player_opponent(current_round.player_token_turn).player_token
+                            current_round.player_token_turn = self.get_player_opponent(current_round.player_token_turn).player_token
                             self.get_player(current_round.player_token_turn).send_message(KuhnCoordinatorMessage(
                                 KuhnCoordinatorEventTypes.NextAction,
                                 inf_set = current_round.stage.public_inf_set(), 
                                 actions = current_round.stage.actions()
                             ))
+                    # In case if player made an invalid action we force finish the game
+                    elif message.player_token == current_round.player_token_turn and not message.action in current_round.stage.actions():
+                        # We first notify both players that invalid action has been made
+                        self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                        self.get_player_opponent(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentInvalidAction, actions = [ CoordinatorActions.Wait ]))
+                        # We force finish we game, the player who made an invalid actions loses the entire game
+                        self.force_winner(self.get_player_opponent(message.player_token).player_token)
+                        self.finish()
+                        # Notify player about the result of the game
+                        for player in self.get_players():
+                            player.send_message(KuhnCoordinatorMessage(
+                                KuhnCoordinatorEventTypes.GameResult, 
+                                game_result = self.player_outcome(player.player_token)
+                            ))
                     else:
-                        print(f'Warn: unexpected message from player = { message.player_token }: [ action = {message.action} ]')
+                        self.logger.warning(f'Unexpected message from player = { message.player_token }: [ action = {message.action} ]')
                         continue
 
                 except queue.Empty:
@@ -206,6 +209,14 @@ class KuhnGame(object):
                 return 'DEFEAT'
             else:
                 return 'WIN'
+
+    def force_winner(self, player_token):
+        with self.lock:
+            player   = self.get_player(player_token)
+            opponent = self.get_player_opponent(player_token)
+            
+            player.bank   = 2 * KuhnGame.InitialBank
+            opponent.bank = 0
 
     def create_new_round(self):
         with self.lock:

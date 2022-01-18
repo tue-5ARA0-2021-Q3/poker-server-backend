@@ -84,10 +84,12 @@ class KuhnCoordinatorEventTypes(Enum):
     GameStart = 1
     CardDeal = 2
     NextAction = 3
-    RoundResult = 4
-    GameResult = 5
-    Close = 6
-    Error = 7
+    InvalidAction = 4
+    OpponentInvalidAction = 5
+    RoundResult = 6
+    GameResult = 7
+    Close = 8
+    Error = 9
 
 # Coordinator communicates with a connected player with `KuhnCoordinatorMessage` object
 # It has an `event` field (see `KuhnCoordinatorEventTypes`) and a corresponding `data` object in a form of a dictionary

@@ -168,6 +168,18 @@ class GameCoordinatorService(Service):
                                     card_rank  = card_rank,
                                     card_image = card_image
                                 )
+                            # In case of `InvalidAction` or `OpponentInvalidAction` events we expect lobby to send
+                            # - actions
+                            elif response.event == KuhnCoordinatorEventTypes.InvalidAction:
+                                yield game_pb2.PlayGameResponse(
+                                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.InvalidAction,
+                                    available_actions = response.data['actions']
+                                )
+                            elif response.event == KuhnCoordinatorEventTypes.OpponentInvalidAction:
+                                yield game_pb2.PlayGameResponse(
+                                    event = game_pb2.PlayGameResponse.PlayGameResponseEvent.OpponentInvalidAction,
+                                    available_actions = response.data['actions']
+                                )
                             # In case of a `NextAction` event we expect lobby to send
                             # - inf_set
                             # - actions
