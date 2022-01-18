@@ -4,14 +4,6 @@
     <div id="home">        
         <div class="ui large header">Welcome to the Kuhn Poker server</div>
         <p>
-            <div class="ui label">
-                <i class="chess icon"></i> 
-                Number of games played:
-                <div class="ui active inline tiny loader" v-if="!initialized"></div>
-                <span v-else>[[ numberOfGamesPlayed ]]</span>
-            </div>
-        </p>
-        <p>
             In order to play a game you need to have a poker game client. 
             Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.
             Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.
@@ -24,34 +16,4 @@
             Once a second player is connected, the game will start automatically.
         </p>
     </div>
-    <script>
-        var app = new Vue({
-            delimiters: ["[[", "]]"],
-            el: '#home',
-            data: {
-              initialized: false,
-              numberOfGamesPlayed: 0,
-              timer: undefined
-            },
-            created: function() {
-                this.fetchNumberOfGamesPlayed()
-                this.timer = setInterval(() => this.fetchNumberOfGamesPlayed(), 5_000)
-            },
-            methods: {
-                fetchNumberOfGamesPlayed: function() {
-                    fetch('{{ request.scheme }}://{{ request.get_host }}/api/game_counter')
-                        .then(response => response.json())
-                        .then((data) => {
-                            this.numberOfGamesPlayed = data.counter
-                            this.initialized = true
-                        })
-                },
-            },
-            destroyed: function() {
-                if (this.timer) {
-                    clearInterval(this.timer)
-                }
-            }
-        })
-    </script>
 {% endblock content %}

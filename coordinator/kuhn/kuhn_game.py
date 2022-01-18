@@ -261,6 +261,7 @@ class KuhnGame(object):
                     game_id       = self.id, 
                     index         = self.get_rounds_count() + 1, 
                     first_player  = _first_player.player_token, 
+                    second_player = self.get_player_opponent(_first_player.player_token).player_token,
                     card_dealings = self.get_card_dealings()
                 )
                 self.rounds.append(_round)
@@ -281,6 +282,7 @@ class KuhnGame(object):
                 return
 
             player = self.get_player(player_token)
+
             last_round.started[player_token] = True
 
             self.logger.info(f'Player { player_token } accepted new round')
@@ -381,18 +383,22 @@ class KuhnGameLobbyStage(object):
 # `KuhnGameRound` is a single round logic wrapper, see also `kuhn_game.py` and `KuhnGameLobbyStage`
 class KuhnGameRound(object):
 
-    def __init__(self, game_id, index, first_player, card_dealings):
+    def __init__(self, game_id, index, first_player, second_player, card_dealings):
+
+        stage = KuhnGameLobbyStage(card_dealings)
 
         dbround = GameRound(
-            game_id  = game_id,
-            first_id = first_player,
-            index    = index,
+            game_id   = game_id,
+            first_id  = first_player,
+            second_id = second_player,
+            index     = index,
+            cards     = stage.cards()
         )
         dbround.save()
 
         self.id                = str(dbround.id)
         self.game_id           = game_id
-        self.stage             = KuhnGameLobbyStage(card_dealings)
+        self.stage             = stage
         self.started           = {}
         self.evaluation        = 0
         self.is_evaluated      = False

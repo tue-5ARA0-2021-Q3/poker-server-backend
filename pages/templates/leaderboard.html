@@ -1,31 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="ui raised segments">
-        <h3 class="ui top attached header">Leaderboard</h3>
-        <div class="ui blue padded segment">
-            <table class="ui very basic table">
-                <thead>
-                <tr>
-                    <th>Player</th>
-                    <th>Games Won</th>
-                    <th>Games Lost</th>
-                    <th>Games Total</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for player in leaderboard %}
-                    <tr>
-                        <td>{{ player.name }}</td>
-                        <td>{{ player.games_won }}</td>
-                        <td>{{ player.games_lost }}</td>
-                        <td>{{ player.games_total }}</td>
-                    </tr>
-                {% endfor %}
+    <h3 class="ui header">Leaderboard</h3>
+    <table class="ui compact fixed line table">
+        <thead>
+        <tr>
+            <th>Player</th>
+            <th>Games Won</th>
+            <th>Games Lost</th>
+            <th>Games Total</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for player in leaderboard %}
+            <tr>
+                <td>{{ player.name }}</td>
+                <td>{{ player.games_won }}</td>
+                <td>{{ player.games_lost }}</td>
+                <td>{{ player.games_total }}</td>
+            </tr>
+        {% endfor %}
 
-                </tbody>
-            </table>
-        </div>
+        </tbody>
+    </table>
 
-    </div>
 {% endblock content %}

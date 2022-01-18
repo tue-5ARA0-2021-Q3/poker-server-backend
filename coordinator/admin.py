@@ -59,6 +59,6 @@ class GameAdminModelView(admin.ModelAdmin):
 
 @admin.register(GameRound)
 class GameRoundAdminModelView(admin.ModelAdmin):
-    list_display    = (linkify('game'), linkify('first'), 'index', 'inf_set', 'evaluation')
-    search_fields   = ('game__id', 'first__token')
-    readonly_fields = ('game', 'first', 'index', 'inf_set', 'evaluation')
+    list_display    = (linkify('game'), linkify('first'), linkify('second'), 'cards', 'index', 'inf_set', 'evaluation')
+    search_fields   = ('game__id', 'first__token', 'second__token')
+    readonly_fields = ('game', 'first', 'second', 'cards', 'index', 'inf_set', 'evaluation')

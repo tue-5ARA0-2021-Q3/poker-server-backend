@@ -3,6 +3,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 
 from enum import IntEnum
 
+import itertools
 import uuid
 import random
 
@@ -147,8 +148,13 @@ class Game(models.Model):
 class GameRound(models.Model):
     id          = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
     game        = models.ForeignKey(Game, on_delete = models.CASCADE, null = False)
-    first       = models.ForeignKey(Player, on_delete = models.CASCADE, null = False)
+    first       = models.ForeignKey(Player, on_delete = models.CASCADE, null = False, related_name = 'rounds_first')
+    second      = models.ForeignKey(Player, on_delete = models.CASCADE, null = False, related_name = 'rounds_second')
     index       = models.IntegerField(validators = [ MinValueValidator(1) ])
-    inf_set     = models.CharField(max_length = 128, null = False)
+    cards       = models.CharField(max_length = 2, null = True)
+    inf_set     = models.CharField(max_length = 128, null = True)
     evaluation  = models.IntegerField(null = True)
+
+    def actions(self):
+        return zip(self.inf_set.split('.')[2:], itertools.cycle([ self.first, self.second ])) if self.inf_set is not None else None
 

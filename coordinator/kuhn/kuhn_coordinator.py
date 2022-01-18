@@ -186,6 +186,8 @@ class KuhnCoordinator(object):
                     tokens  = self.waiting_room.get_player_tokens()
                     players = list(Player.objects.filter(token__in = tokens))
                     game, winner, unlucky = self.play_duel(players)
+                    if game.error != None:
+                        raise Exception(game.error)
                     self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Close))
                 elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
                     raise Exception('Tournament mode is not implemented')

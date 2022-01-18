@@ -14,26 +14,25 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf.urls import include
+from django.shortcuts import redirect
 from django.contrib import admin
 from django.urls import path
 
-from pages.views import home_view, games_view, game_view, leaderboard_view, about_view
-from pages.api import game_counter, last_games
+from pages.views import home_view, games_view, game_view, leaderboard_view
+from pages.api import game_counter
 
 from coordinator.handlers import game_coordinator_handlers
 
 urlpatterns = [
+    path('', lambda req: redirect('/home/')),
     path('home/', home_view, name = 'home'),
     path('games/', games_view, name = 'games'),
     path('game/', game_view, name = 'game'),
     path('game/<str:game_id>/', game_view, name = 'game'),
     path('leaderboard/', leaderboard_view, name = 'leaderboard'),
-    path('about/', about_view, name = 'about'),
     path('admin/', admin.site.urls),
     path('logs/', include('log_viewer.urls')),
-
     path('api/game_counter', game_counter),
-    path('api/last_games', last_games)
 ]
 
 
