@@ -141,7 +141,6 @@ class Game(models.Model):
     created_at  = models.DateTimeField(auto_now_add = True)
     player1     = models.ForeignKey(Player, on_delete = models.CASCADE, null = False, related_name = 'games_player1')
     player2     = models.ForeignKey(Player, on_delete = models.CASCADE, null = False, related_name = 'games_player2')
-    outcome     = models.TextField(default = '')
     winner      = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'games_winner')
     game_type   = models.IntegerField(choices = GameTypes.choices(), null = False)
 
@@ -150,7 +149,6 @@ class GameRound(models.Model):
     game        = models.ForeignKey(Game, on_delete = models.CASCADE, null = False)
     first       = models.ForeignKey(Player, on_delete = models.CASCADE, null = False)
     index       = models.IntegerField(validators = [ MinValueValidator(1) ])
-    state       = models.CharField(max_length = 64, null = False)
-    actions     = models.CharField(max_length = 128, null = False)
+    inf_set     = models.CharField(max_length = 128, null = False)
     evaluation  = models.IntegerField(null = True)
 

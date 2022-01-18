@@ -11,7 +11,7 @@ from django.conf import settings
 from coordinator.kuhn.kuhn_poker import KuhnRootChanceGameState
 from coordinator.kuhn.kuhn_constants import CARDS_DEALINGS, POSSIBLE_CARDS, CoordinatorActions, KuhnCoordinatorMessage, KuhnCoordinatorEventTypes
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
-from coordinator.models import Game
+from coordinator.models import Game, GameRound
 
 class KuhnGame(object):
     InitialBank     = settings.KUHN_GAME_INITIAL_BANK
@@ -164,7 +164,6 @@ class KuhnGame(object):
                     is_finished = True, 
                     is_failed   = is_failed, 
                     winner      = self.get_winner_token(),
-                    outcome     = self.get_outcome(),
                     error       = error
                 )
                 self.finished.set()
@@ -219,6 +218,9 @@ class KuhnGame(object):
     def get_last_round(self):
         return self.rounds[-1] if len(self.rounds) >= 1 else None
 
+    def get_rounds_count(self):
+        return len(self.rounds)
+
     def check_players_bank(self):
         with self.lock:
         # Check if lobby can create a new round
@@ -255,7 +257,12 @@ class KuhnGame(object):
             # creates a new round only on termination
             if last_round is None or last_round.stage.is_terminal():
                 _first_player = self.get_player_opponent(last_round.first_player) if last_round is not None else self.get_random_player()
-                _round        = KuhnGameRound(first_player = _first_player.player_token, card_dealings = self.get_card_dealings())
+                _round        = KuhnGameRound(
+                    game_id       = self.id, 
+                    index         = self.get_rounds_count() + 1, 
+                    first_player  = _first_player.player_token, 
+                    card_dealings = self.get_card_dealings()
+                )
                 self.rounds.append(_round)
                 self.logger.info(f'A new round has been created. First player is { _first_player.player_token }')
                 return _round
@@ -315,8 +322,7 @@ class KuhnGame(object):
                 else:
                     player.bank = player.bank - evaluation
 
-            last_round.evaluation = evaluation
-            last_round.is_evaluated = True
+            last_round.evaluate(evaluation)
 
             self.logger.info(f'Round has been evaluated. Banks: { list(map(lambda p: p.bank, self.get_players())) }')
 
@@ -362,6 +368,9 @@ class KuhnGameLobbyStage(object):
             _cards = cards
         return f'{_}.{_cards}.{".".join(moves)}'  # self._stage.inf_set()
 
+    def secret_inf_set(self):
+        return self._stage.inf_set()
+
     def public_inf_set(self):
         return self._stage.public_inf_set()
 
@@ -372,11 +381,26 @@ class KuhnGameLobbyStage(object):
 # `KuhnGameRound` is a single round logic wrapper, see also `kuhn_game.py` and `KuhnGameLobbyStage`
 class KuhnGameRound(object):
 
-    def __init__(self, first_player, card_dealings):
+    def __init__(self, game_id, index, first_player, card_dealings):
+
+        dbround = GameRound(
+            game_id  = game_id,
+            first_id = first_player,
+            index    = index,
+        )
+        dbround.save()
+
+        self.id                = str(dbround.id)
+        self.game_id           = game_id
         self.stage             = KuhnGameLobbyStage(card_dealings)
         self.started           = {}
         self.evaluation        = 0
         self.is_evaluated      = False
         self.first_player      = first_player
         self.player_token_turn = self.first_player
+
+    def evaluate(self, evaluation):
+        GameRound.objects.filter(id = self.id).update(evaluation = evaluation, inf_set = self.stage.secret_inf_set())
+        self.evaluation   = evaluation
+        self.is_evaluated = True
 

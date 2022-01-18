@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 
-from coordinator.models import Game, GameCoordinator, Player, RoomRegistration, WaitingRoom
+from coordinator.models import Game, GameCoordinator, GameRound, Player, RoomRegistration, WaitingRoom
 
 def linkify(field_name):
     """
@@ -40,16 +40,25 @@ class GameCoordinatorAdminModelView(admin.ModelAdmin):
 class WaitingRoomAdminModelView(admin.ModelAdmin):
     list_display    = ('id', linkify('coordinator'), 'capacity', 'registered', 'timeout', 'ready', 'closed', 'error')
     list_filter     = ('capacity', 'ready', 'closed', ('error', admin.EmptyFieldListFilter))
+    search_fields   = ('id', 'coordinator__id')
     readonly_fields = ('id', 'coordinator', 'capacity', 'registered', 'timeout', 'ready', 'closed', 'error')
 
 @admin.register(RoomRegistration)
 class RoomRegistrationAdminModelView(admin.ModelAdmin):
     list_display = ('id', linkify('room'), linkify('player'))
     list_filter  = ()
+    search_fields = ('room__id', 'player__token')
     readonly_fields = ('id', 'room', 'player')
 
 @admin.register(Game)
 class GameAdminModelView(admin.ModelAdmin):
-    list_display    = ('id', linkify('created_by'), 'created_at', 'is_started', 'is_finished', 'is_failed', linkify('player1'), linkify('player2'), linkify('winner'), 'game_type', 'outcome', 'error')
+    list_display    = ('id', linkify('created_by'), 'created_at', 'is_started', 'is_finished', 'is_failed', linkify('player1'), linkify('player2'), linkify('winner'), 'game_type', 'error')
     list_filter     = ('is_started', 'is_finished', 'is_failed', ('winner', admin.EmptyFieldListFilter), 'game_type')
-    readonly_fields = ('id', 'created_by', 'created_at', 'is_started', 'is_finished', 'is_failed', 'player1', 'player2', 'winner', 'game_type', 'outcome', 'error')
+    search_fields   = ('id', 'created_by__id', 'player1__token', 'player2__token', 'winner__token')
+    readonly_fields = ('id', 'created_by', 'created_at', 'is_started', 'is_finished', 'is_failed', 'player1', 'player2', 'winner', 'game_type', 'error')
+
+@admin.register(GameRound)
+class GameRoundAdminModelView(admin.ModelAdmin):
+    list_display    = (linkify('game'), linkify('first'), 'index', 'inf_set', 'evaluation')
+    search_fields   = ('game__id', 'first__token')
+    readonly_fields = ('game', 'first', 'index', 'inf_set', 'evaluation')
