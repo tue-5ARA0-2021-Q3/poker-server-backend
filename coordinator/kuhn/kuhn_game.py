@@ -143,6 +143,12 @@ class KuhnGame(object):
             traceback.print_exc()
             self.finish(error = str(e))
 
+        winner_token = self.get_winner_token()
+        if winner_token is None:
+            return None, None
+        else:
+            return self.get_player(winner_token), self.get_player_opponent(winner_token)
+
     def is_finished(self):
         with self.lock:
             return self.finished.is_set()

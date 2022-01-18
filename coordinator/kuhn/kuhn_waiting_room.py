@@ -69,8 +69,9 @@ class KuhnWaitingRoom(object):
 
     def notify_all_players(self, message):
         with self.lock:
-            for player_channel in self.player_channels.values():
-                player_channel.put(message)
+            for player_token, player_channel in self.player_channels.items():
+                if not self.is_disconnected(player_token):
+                    player_channel.put(message)
 
     def wait_ready(self) -> bool:
         return self.ready.wait(timeout = self.timeout)

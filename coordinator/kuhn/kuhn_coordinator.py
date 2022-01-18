@@ -149,7 +149,7 @@ class KuhnCoordinator(object):
                 self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
             except Exception as e:
                 self.close(error = str(e))
-                return 
+                return F
         elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
             self.close(error = 'Not implemented: GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS')
 
@@ -185,9 +185,7 @@ class KuhnCoordinator(object):
                 if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT or self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER:
                     tokens  = self.waiting_room.get_player_tokens()
                     players = list(Player.objects.filter(token__in = tokens))
-                    game    = self.play_duel(players)
-                    if game.error != None:
-                        raise Exception(game.error)
+                    game, winner, unlucky = self.play_duel(players)
                     self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Close))
                 elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
                     raise Exception('Tournament mode is not implemented')
@@ -207,13 +205,13 @@ class KuhnCoordinator(object):
         if len(players) != 2:
             raise Exception(f'Invalid number of players in duel setup. len(players) = { len(players) }')
 
-
         player_tokens = list(map(lambda player: str(player.token), players))
 
         player1 = KuhnGameLobbyPlayer(player_tokens[0], KuhnGame.InitialBank, self.waiting_room.get_player_channel(player_tokens[0]))
         player2 = KuhnGameLobbyPlayer(player_tokens[1], KuhnGame.InitialBank, self.waiting_room.get_player_channel(player_tokens[1]))
         game    = KuhnGame(self, player1, player2, self.game_type, self.channel)
-        game.play()
 
-        return game
+        winner, unlucky = game.play()
+
+        return game, winner, unlucky
 
