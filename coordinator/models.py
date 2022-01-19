@@ -158,3 +158,15 @@ class GameRound(models.Model):
     def actions(self):
         return zip(self.inf_set.split('.')[2:], itertools.cycle([ self.first, self.second ])) if self.inf_set is not None else None
 
+
+class Tournament(models.Model):
+    id          = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    coordinator = models.ForeignKey(GameCoordinator, on_delete = models.CASCADE, null = True)
+    place1      = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'places_1')
+    place2      = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'places_3')
+    place3      = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'places_2')
+    timeout     = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
+    capacity    = models.IntegerField(validators = [ MinValueValidator(3) ], null = False)
+    game_type   = models.IntegerField(choices = GameTypes.choices(), null = False)
+    allow_bots  = models.BooleanField(null = False, default = True)
+    is_started  = models.BooleanField(null = False, default = False)

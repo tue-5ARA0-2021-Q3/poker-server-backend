@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 
-from coordinator.models import Game, GameCoordinator, GameRound, Player, RoomRegistration, WaitingRoom
+from coordinator.models import Game, GameCoordinator, GameRound, Player, RoomRegistration, Tournament, WaitingRoom
 
 def linkify(field_name):
     """
@@ -62,3 +62,10 @@ class GameRoundAdminModelView(admin.ModelAdmin):
     list_display    = (linkify('game'), linkify('first'), linkify('second'), 'cards', 'index', 'inf_set', 'evaluation')
     search_fields   = ('game__id', 'first__token', 'second__token')
     readonly_fields = ('game', 'first', 'second', 'cards', 'index', 'inf_set', 'evaluation')
+
+@admin.register(Tournament)
+class TournamentAdminModelView(admin.ModelAdmin):
+    list_display    = ('id', linkify('coordinator'), linkify('place1'), linkify('place2'), linkify('place3'), 'timeout', 'capacity', 'allow_bots', 'is_started', 'game_type')
+    list_filter     = ('is_started', 'allow_bots', 'capacity')
+    search_fields   = ('id', 'coordinator_id', 'place1__token', 'place2__token', 'place3__token')
+    readonly_fields = ('id', 'coordinator', 'place1', 'place2', 'place3')

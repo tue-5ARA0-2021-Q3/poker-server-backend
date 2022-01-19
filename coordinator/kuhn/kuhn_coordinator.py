@@ -5,6 +5,7 @@ import os
 import logging
 import subprocess
 import random
+import time
 import traceback
 from enum import Enum
 from typing import List
@@ -57,6 +58,7 @@ class KuhnCoordinator(object):
         self.channel          = queue.Queue()
         self.registered       = threading.Event()
         self.ready            = threading.Event()
+        self.botsready        = threading.Event()
         self.closed           = threading.Event()
         self.error            = None
         self.logger           = logging.getLogger('kuhn.coordinator')
@@ -115,6 +117,18 @@ class KuhnCoordinator(object):
                 GameCoordinator.objects.filter(id = self.id).update(is_finished = True, is_failed = is_failed, error = error)
                 self.closed.set()
 
+    def are_bots_ready(self):
+        with self.lock:
+            return self.botsready.is_set()
+
+    def wait_bots_ready(self):
+        return self.botsready.wait(timeout = settings.COORDINATOR_READY_TIMEOUT)
+    
+    def mark_bots_as_ready(self):
+        with self.lock:
+            if not self.are_bots_ready():
+                self.botsready.set()
+
     def add_bots(self):
 
         if not self.wait_registered():
@@ -142,6 +156,8 @@ class KuhnCoordinator(object):
 
         # In case of duel with a bot we instantiate bot thread immediatelly
         if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
+            # In case of a duel we immediately mark bot lobby as ready, however, it will spawn a couple of moments later during `subprocess.run()`
+            self.mark_bots_as_ready()
             try: 
                 bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
                 self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
@@ -151,6 +167,13 @@ class KuhnCoordinator(object):
                 self.close(error = str(e))
                 return
         elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
+            # In case of a tournament mode we wait for lobby to be ready and we spawn bots if and only if there are not enough players
+            self.wait_ready()
+
+            # TODO spawn remaining bots
+            time.sleep(5)
+
+            self.mark_bots_as_ready()
             self.close(error = 'Not implemented: GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS')
 
         return
@@ -175,6 +198,11 @@ class KuhnCoordinator(object):
             # We mark coordinator as ready at this point since upstream service waits for this signal
             # However this event does not mean that coordinator is not closed
             self.mark_as_ready()
+
+            # After coordinator is ready we additionaly wait for bots to be ready
+            # This procedure does nothing in case of a simple duel, however in case of a tournament
+            # We may need to spawn bots after a coordinator has been marked as ready (to fill remaining players)
+            self.wait_bots_ready()
 
             # If coordinator has not been closed we proceed with a normal coordinator logic
             # Otherwise it will be just finalized
