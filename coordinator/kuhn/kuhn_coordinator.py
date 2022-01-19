@@ -154,10 +154,7 @@ class KuhnCoordinator(object):
         if len(KuhnCoordinator.LobbyBots) == 0:
             self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot implementations.')
 
-        # In case of duel with a bot we instantiate bot thread immediatelly
-        if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
-            # In case of a duel we immediately mark bot lobby as ready, however, it will spawn a couple of moments later during `subprocess.run()`
-            self.mark_bots_as_ready()
+        def __spawn_bot():
             try: 
                 bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
                 self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
@@ -166,17 +163,26 @@ class KuhnCoordinator(object):
             except Exception as e:
                 self.close(error = str(e))
                 return
+
+        # In case of duel with a bot we instantiate bot thread immediatelly
+        if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
+            threading.Thread(target = __spawn_bot).start()
+            self.waiting_room.wait_ready()
+        # In case of a tournament mode we wait for waiting room to be ready and we spawn bots if and only if there are not enough players
         elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
-            # In case of a tournament mode we wait for lobby to be ready and we spawn bots if and only if there are not enough players
-            self.wait_ready()
+            self.waiting_room.wait_ready()
+                
+            remaining = self.waiting_room.capacity() - self.waiting_room.get_num_registered_players()
 
-            # TODO spawn remaining bots
-            time.sleep(5)
+            # Here we check if we actually have some remaining spots and unset waiting_room.ready() status
+            if remaining > 0:
+                self.waiting_room.mark_as_unready()
+                for _ in range(remaining):
+                    threading.Thread(target = __spawn_bot).start()
 
-            self.mark_bots_as_ready()
-            self.close(error = 'Not implemented: GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS')
+            self.waiting_room.wait_ready()
 
-        return
+        self.mark_bots_as_ready()
 
     def run(self):
         try:
@@ -187,22 +193,23 @@ class KuhnCoordinator(object):
             self.logger.debug(f'Coordinator { self.id } initialized `run` procedure.')
 
             # First we just wait for players to be registered
-            is_ready = self.waiting_room.wait_ready()
+            self.waiting_room.wait_ready()
 
             # We do a series of checks here and in case of an error close coordinator without even starting any games
             if self.waiting_room.is_closed():
-                self.close(error = 'Waiting room has been closed unexpectedly.')
-            elif not is_ready:
-                self.close(error = 'Waiting room have not enough players after timeout.')
+                raise Exception('Waiting room has been closed unexpectedly.')
             
+            # After waiting room is ready we additionaly wait for bots to be ready
+            # This procedure does nothing in case of a simple duel, however in case of a tournament
+            # We may need to spawn bots after a waiting room has been marked as ready (to fill remaining players)
+            self.wait_bots_ready()
+
             # We mark coordinator as ready at this point since upstream service waits for this signal
             # However this event does not mean that coordinator is not closed
             self.mark_as_ready()
 
-            # After coordinator is ready we additionaly wait for bots to be ready
-            # This procedure does nothing in case of a simple duel, however in case of a tournament
-            # We may need to spawn bots after a coordinator has been marked as ready (to fill remaining players)
-            self.wait_bots_ready()
+            if self.waiting_room.get_num_registered_players() != self.waiting_room.get_room_capacity():
+                raise Exception('Not enough players to start the game.')
 
             # If coordinator has not been closed we proceed with a normal coordinator logic
             # Otherwise it will be just finalized

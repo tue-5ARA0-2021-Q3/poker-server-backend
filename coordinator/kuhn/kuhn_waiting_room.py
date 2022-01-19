@@ -86,6 +86,12 @@ class KuhnWaitingRoom(object):
                 WaitingRoom.objects.filter(id = self.id).update(ready = True)
                 self.ready.set()
 
+    def mark_as_unready(self):
+        with self.lock:
+            if self.is_ready():
+                WaitingRoom.objects.filter(id = self.id).update(ready = True)
+                self.ready.clear()
+
     def is_closed(self) -> bool:
         with self.lock:
             return self.closed
