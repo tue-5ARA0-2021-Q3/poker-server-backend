@@ -109,6 +109,8 @@ class KuhnCoordinator(object):
     def close(self, error = None):
         with self.lock:
             if not self.is_closed():
+                if not self.is_ready():
+                    self.mark_as_ready()
                 is_failed, error = (False, None) if error is None else (True, str(error))
                 if is_failed:
                     self.logger.warning(f'Game cordinator { self.id } closed with an error: { error }')
@@ -138,49 +140,48 @@ class KuhnCoordinator(object):
         self.logger.debug(f'Coordinator { self.id } initialized `add_bots` procedure.')
 
         if not settings.KUHN_ALLOW_BOTS:
-            return
+            pass
+        elif self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS:
+            pass
+        else:
+            bot_players = Player.objects.filter(is_bot = True)
 
-        if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS:
-            return
+            if len(bot_players) == 0:
+                self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot players in the database.')
 
-        bot_players = Player.objects.filter(is_bot = True)
+            bot_player = random.choice(bot_players)
+            bot_token  = str(bot_player.token)
 
-        if len(bot_players) == 0:
-            self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot players in the database.')
+            if len(KuhnCoordinator.LobbyBots) == 0:
+                self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot implementations.')
 
-        bot_player = random.choice(bot_players)
-        bot_token  = str(bot_player.token)
+            def __spawn_bot():
+                try: 
+                    bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
+                    self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
+                    subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, capture_output = True)
+                    self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
+                except Exception as e:
+                    self.close(error = str(e))
+                    return
 
-        if len(KuhnCoordinator.LobbyBots) == 0:
-            self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot implementations.')
+            # In case of duel with a bot we instantiate bot thread immediatelly
+            if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
+                threading.Thread(target = __spawn_bot).start()
+                self.waiting_room.wait_ready()
+            # In case of a tournament mode we wait for waiting room to be ready and we spawn bots if and only if there are not enough players
+            elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
+                self.waiting_room.wait_ready()
+                    
+                remaining = self.waiting_room.get_room_capacity() - self.waiting_room.get_num_registered_players()
 
-        def __spawn_bot():
-            try: 
-                bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
-                self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
-                subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, capture_output = True)
-                self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
-            except Exception as e:
-                self.close(error = str(e))
-                return
+                # Here we check if we actually have some remaining spots and unset waiting_room.ready() status
+                if remaining > 0:
+                    self.waiting_room.mark_as_unready()
+                    for _ in range(remaining):
+                        threading.Thread(target = __spawn_bot).start()
 
-        # In case of duel with a bot we instantiate bot thread immediatelly
-        if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
-            threading.Thread(target = __spawn_bot).start()
-            self.waiting_room.wait_ready()
-        # In case of a tournament mode we wait for waiting room to be ready and we spawn bots if and only if there are not enough players
-        elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
-            self.waiting_room.wait_ready()
-                
-            remaining = self.waiting_room.capacity() - self.waiting_room.get_num_registered_players()
-
-            # Here we check if we actually have some remaining spots and unset waiting_room.ready() status
-            if remaining > 0:
-                self.waiting_room.mark_as_unready()
-                for _ in range(remaining):
-                    threading.Thread(target = __spawn_bot).start()
-
-            self.waiting_room.wait_ready()
+                self.waiting_room.wait_ready()
 
         self.mark_bots_as_ready()
 

@@ -10,7 +10,6 @@ from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator, KuhnCoordinatorEv
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayerMessage
 
 from django_grpc_framework.services import Service
-from django.db.models.signals import post_save
 from django.dispatch import receiver
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, Tournament
@@ -21,7 +20,7 @@ from enum import Enum
 
 class GameCoordinatorService(Service):
     coordinators = {}
-    lock         = threading.Lock()
+    lock         = threading.RLock()
     logger       = logging.getLogger('service.coordinator')
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
@@ -272,12 +271,11 @@ class GameCoordinatorService(Service):
 
         callback_active = False
 
-    # Tournaments are created from admin panel only
-    @staticmethod
-    @receiver(post_save, sender = Tournament)
-    def on_tournament_create(sender, instance, created, raw, using, update_fields, **kwargs):
+    def on_tournament_create(self, sender, instance, created, raw, using, update_fields, **kwargs):
         # Once tournament has been created we add a new coordinator for it automatically
         if created:
+            GameCoordinatorService.logger.debug(f'Creating coordinator instance for Tournament { instance.id }')
+
             coordinator = GameCoordinatorService.add_coordinator(KuhnCoordinator(
                 coordinator_type = GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS if instance.allow_bots else GameCoordinatorTypes.TOURNAMENT_PLAYERS,
                 game_type        = instance.game_type,
@@ -329,55 +327,55 @@ class GameCoordinatorService(Service):
 
     @staticmethod 
     def find_coordinator_instance(player: Player, coordinator_id: str, game_type: int) -> KuhnCoordinator:
-        # Behaviour depends on provided `token`. 
-        # Real players attemt to find `PLAYER_PLAYER` games only
-        # Bot players attempt to find `PLAYER_BOT` games only
-        # First we check if requested game is a game against a bot
-        # In this case we always create a new private game and will add a bot to it later on
-        if coordinator_id == 'bot':
-            if player.is_bot:
-                raise Exception('Bots cannot play agains bots')
-            return GameCoordinatorService.add_coordinator(KuhnCoordinator(
-                coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_BOT, 
-                game_type        = game_type, 
-                capacity         = 2,
-                timeout          = settings.COORDINATOR_CONNECTION_TIMEOUT,
-                is_private       = True
-            ))
-        # Second we check if requested game was a random game
-        # In this case we check if there are some public pending games available and do nothing if not
-        # Random games can be played only with real players, but Kuhn type game should match
-        elif coordinator_id == 'random':
-            if player.is_bot:
-                raise Exception('Bots cannot play random games')
-            # If we can find a public unfinished game we simply return it
-            # This procedure assumes there are no concurrent connection, however 
-            # in case of concurrent connections one of the connection should not have enough time to connect
-            public_coordinators = GameCoordinator.objects.filter(
-                coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER, 
-                game_type        = game_type, 
-                is_started       = False,
-                is_failed        = False, 
-                is_finished      = False, 
-                is_private       = False
-            )
-            if len(public_coordinators) != 0:
-                coordinator = public_coordinators[0] # We pick first available public coordinator
-                return GameCoordinatorService.coordinators[ str(coordinator.id) ] # Coordinator must exist in service internal dict
-            else:
-                # In case if coordinator id was set to `random` and there were no games available at the moment we create a new one
+        with GameCoordinatorService.lock:
+            # Behaviour depends on provided `token`. 
+            # Real players attemt to find `PLAYER_PLAYER` games only
+            # Bot players attempt to find `PLAYER_BOT` games only
+            # First we check if requested game is a game against a bot
+            # In this case we always create a new private game and will add a bot to it later on
+            if coordinator_id == 'bot':
+                if player.is_bot:
+                    raise Exception('Bots cannot play agains bots')
                 return GameCoordinatorService.add_coordinator(KuhnCoordinator(
-                    coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER,
-                    game_type        = game_type,
+                    coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_BOT, 
+                    game_type        = game_type, 
                     capacity         = 2,
                     timeout          = settings.COORDINATOR_CONNECTION_TIMEOUT,
-                    is_private       = False
+                    is_private       = True
                 ))
-        else:
-            # Last case should be a valid coordinator id otherwise we return an error
-            coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER if not player.is_bot else GameCoordinatorTypes.DUEL_PLAYER_BOT
-            candidates = GameCoordinator.objects.filter(id = coordinator_id, coordinator_type = coordinator_type, game_type = game_type)
-            if len(candidates) != 0:
-                db_coordinator = candidates[0]
-                return GameCoordinatorService.coordinators[ str(db_coordinator.id) ]
-            raise Exception(f'Coordinator instance with UUID { coordinator_id } has not been found') 
+            # Second we check if requested game was a random game
+            # In this case we check if there are some public pending games available and do nothing if not
+            # Random games can be played only with real players, but Kuhn type game should match
+            elif coordinator_id == 'random':
+                if player.is_bot:
+                    raise Exception('Bots cannot play random games')
+                # If we can find a public unfinished game we simply return it
+                # This procedure assumes there are no concurrent connection, however 
+                # in case of concurrent connections one of the connection should not have enough time to connect
+                public_coordinators = GameCoordinator.objects.filter(
+                    coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER, 
+                    game_type        = game_type, 
+                    is_started       = False,
+                    is_failed        = False, 
+                    is_finished      = False, 
+                    is_private       = False
+                )
+                if len(public_coordinators) != 0:
+                    coordinator = public_coordinators[0] # We pick first available public coordinator
+                    return GameCoordinatorService.coordinators[ str(coordinator.id) ] # Coordinator must exist in service internal dict
+                else:
+                    # In case if coordinator id was set to `random` and there were no games available at the moment we create a new one
+                    return GameCoordinatorService.add_coordinator(KuhnCoordinator(
+                        coordinator_type = GameCoordinatorTypes.DUEL_PLAYER_PLAYER,
+                        game_type        = game_type,
+                        capacity         = 2,
+                        timeout          = settings.COORDINATOR_CONNECTION_TIMEOUT,
+                        is_private       = False
+                    ))
+            else:
+                # Last case should be a valid coordinator id otherwise we return an error
+                candidates = GameCoordinator.objects.filter(id = coordinator_id, game_type = game_type)
+                if len(candidates) != 0:
+                    db_coordinator = candidates[0]
+                    return GameCoordinatorService.coordinators[ str(db_coordinator.id) ]
+                raise Exception(f'Coordinator instance with UUID { coordinator_id } has not been found') 
