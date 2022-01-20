@@ -43,6 +43,7 @@ def leaderboard_view(request, *args, **kwargs):
             'games_won': games_won,
             'games_lost': games_lost
         })
+        leaderboard = sorted(leaderboard, key = lambda d: -d['games_total'])
     return render(request, "leaderboard.html", {
         'leaderboard': leaderboard
     })

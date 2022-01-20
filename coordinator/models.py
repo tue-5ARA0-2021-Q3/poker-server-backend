@@ -19,7 +19,7 @@ RandomBotNames = [
     'Bot (Wall-E)',
     'Bot (C-3PO)',
     'Bot (AWESOM-O)',
-    'BOT (J.A.R.V.I.S.)'
+    'B.o.t. (J.A.R.V.I.S.)'
 ]
 
 RandomUserNames = [
