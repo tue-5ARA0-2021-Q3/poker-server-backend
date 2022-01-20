@@ -233,7 +233,8 @@ class KuhnCoordinator(object):
                     if game.error != None:
                         raise Exception(game.error)
                 elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
-                    tournament, place1, place2, place3 = self.play_tournament(players)
+                    # tournament, place1, place2, place3 = self.play_tournament(players)
+                    self.play_tournament(players)
                 else:
                     raise Exception(f'Unknown coordinator type { self.coordinator_type }')
             self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Close))
@@ -261,7 +262,45 @@ class KuhnCoordinator(object):
 
         return game, winner, unlucky
 
+    def make_bracket(self, players: List[Player]):
+            n = len(players)
+
+            if not ((n & (n-1) == 0) and n != 0):
+                raise Exception('New bracket can be created only if number of players is equal to the power of 2.')
+
+            bracket      = []
+            draw_players = players.copy()
+
+            while len(draw_players) != 0:
+                bracket_players = random.sample(draw_players, 2)
+                bracket.append(bracket_players)
+                for player in bracket_players:
+                    draw_players.remove(player)
+            
+            return bracket
+
     def play_tournament(self, players: List[Player]):
-        raise Exception('`play_tournament` procedure is not implemented')
+
+        # First we create tournament bracket based on number of players
+
+        remaining_players = players.copy()
+
+        round = 1
+
+        while len(remaining_players) != 1:
+            bracket = self.make_bracket(remaining_players)
+            winners = []
+
+            for duel in bracket:
+                game, winner, unlucky = self.play_duel(duel)
+                winners.append(winner)
+
+            remaining_players = list(Player.objects.filter(token__in = list(map(lambda d: d.player_token, winners))))
+
+            round = round + 1
+
+        self.logger.info(f'We have a winner for a tournament: { self.id } - { remaining_players[0].token }')
+
+        return 
 
 

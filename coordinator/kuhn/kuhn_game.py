@@ -201,7 +201,7 @@ class KuhnGame(object):
 
     def get_winner_token(self) -> str:
         with self.lock:
-            for player in self.get_players():
+            for player in [ self.player1, self.player2 ]:
                 if player.bank <= 0:
                     return self.get_player_opponent(player.player_token).player_token
             return None

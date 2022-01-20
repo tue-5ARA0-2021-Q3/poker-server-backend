@@ -181,3 +181,20 @@ class Tournament(models.Model):
     game_type   = models.IntegerField(choices = GameTypes.choices(), null = False)
     allow_bots  = models.BooleanField(null = False, default = True)
     is_started  = models.BooleanField(null = False, default = False)
+
+class TournamentRound(models.Model):
+    id         = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    tournament = models.ForeignKey(Tournament, on_delete = models.CASCADE, null = False)
+    index      = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
+
+class TournamentRoundBracketItem(models.Model):
+    id         = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    position   = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
+    tournament = models.ForeignKey(Tournament, on_delete = models.CASCADE, null = False)
+    player1    = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'players_player1')
+    player2    = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'players_player2')
+
+class TournamentRoundGame(models.Model):
+    id    = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    round = models.ForeignKey(TournamentRound, on_delete = models.CASCADE, null = False)
+    game  = models.ForeignKey(Game, on_delete = models.CASCADE, null = False)

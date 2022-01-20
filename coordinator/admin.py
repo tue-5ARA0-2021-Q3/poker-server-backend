@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 
-from coordinator.models import Game, GameCoordinator, GameRound, Player, RoomRegistration, Tournament, WaitingRoom
+from coordinator.models import Game, GameCoordinator, GameRound, Player, RoomRegistration, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame, WaitingRoom
 
 def linkify(field_name):
     """
@@ -67,5 +67,23 @@ class GameRoundAdminModelView(admin.ModelAdmin):
 class TournamentAdminModelView(admin.ModelAdmin):
     list_display    = ('id', linkify('coordinator'), linkify('place1'), linkify('place2'), linkify('place3'), 'timeout', 'capacity', 'allow_bots', 'is_started', 'game_type')
     list_filter     = ('is_started', 'allow_bots', 'capacity')
-    search_fields   = ('id', 'coordinator_id', 'place1__token', 'place2__token', 'place3__token')
+    search_fields   = ('id', 'coordinator__id', 'place1__token', 'place2__token', 'place3__token')
     readonly_fields = ('id', 'coordinator', 'place1', 'place2', 'place3')
+
+@admin.register(TournamentRound)
+class TournamentRoundModelView(admin.ModelAdmin):
+    list_display    = ('id', linkify('tournament'), 'index')
+    search_fields   = ('tournament__id', )
+    readonly_fields = ('id', 'tournament', 'index')
+
+@admin.register(TournamentRoundBracketItem)
+class TournamentRoundBracketItemModelView(admin.ModelAdmin):
+    list_display    = ('id', linkify('tournament'), 'position', linkify('player1'), linkify('player2'))
+    search_fields   = ('tournament__id', 'player1__token', 'player2__token')
+    readonly_fields = ('id', 'tournament', 'position', 'player1', 'player2')
+
+@admin.register(TournamentRoundGame)
+class TournamentRoundGameModelView(admin.ModelAdmin):
+    list_display    = ('id', linkify('round'), linkify('game'))
+    search_fields   = ('round__id', 'game__id')
+    readonly_fields = ('id', 'round', 'game')
