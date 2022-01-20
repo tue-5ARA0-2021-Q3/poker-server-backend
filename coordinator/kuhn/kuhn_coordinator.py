@@ -290,21 +290,27 @@ class KuhnCoordinator(object):
 
         while len(remaining_players) != 1:
             
+            # We create new database record for each round
             dbround = TournamentRound(tournament = dbtournament, index = round)
             dbround.save()
 
             self.logger.info(f'Starting round { round } of the tournament for coordinator { self.id }')
 
+            # We create brackets until there is only one remaining player
             bracket = self.make_bracket(remaining_players)
             winners = []
 
+            # We create database records for all upcoming rounds in advance and save db references for later usage
+            dbbrackets = []
             for (index, item) in enumerate(bracket):
-                dbitem = TournamentRoundBracketItem(position = index + 1, tournament = dbtournament, player1 = item[0], player2 = item[1])
+                dbitem = TournamentRoundBracketItem(position = index + 1, round = dbround, player1 = item[0], player2 = item[1])
                 dbitem.save()
+                dbbrackets.append(dbitem)
             
             self.logger.info(f'Bracket has been created for round { round } of the tournament for coordinator { self.id }')
 
-            for duel in bracket:
+            # For each item in bracket we play a standard duel game and create a `TournamentRoundGame` database record at the end
+            for duel, dbbracket in zip(bracket, dbbrackets):
                 self.logger.info(f'Starting a single duel within the tournament for coordinator { self.id }')
 
                 game, winner, unlucky = self.play_duel(duel)
@@ -314,7 +320,7 @@ class KuhnCoordinator(object):
                     random_winner_token = random.choice(duel).token
                     winner = KuhnGameLobbyPlayer(random_winner_token, None, None)
 
-                dbgame = TournamentRoundGame(round = dbround, game = Game.objects.get(id = game.id))
+                dbgame = TournamentRoundGame(bracket_item = dbbracket, game = Game.objects.get(id = game.id))
                 dbgame.save()
 
                 winners.append(winner)

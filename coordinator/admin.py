@@ -78,12 +78,12 @@ class TournamentRoundModelView(admin.ModelAdmin):
 
 @admin.register(TournamentRoundBracketItem)
 class TournamentRoundBracketItemModelView(admin.ModelAdmin):
-    list_display    = ('id', linkify('tournament'), 'position', linkify('player1'), linkify('player2'))
-    search_fields   = ('tournament__id', 'player1__token', 'player2__token')
-    readonly_fields = ('id', 'tournament', 'position', 'player1', 'player2')
+    list_display    = ('id', linkify('round'), 'position', linkify('player1'), linkify('player2'))
+    search_fields   = ('round__id', 'player1__token', 'player2__token')
+    readonly_fields = ('id', 'round', 'position', 'player1', 'player2')
 
 @admin.register(TournamentRoundGame)
 class TournamentRoundGameModelView(admin.ModelAdmin):
-    list_display    = ('id', linkify('round'), linkify('game'))
-    search_fields   = ('round__id', 'game__id')
-    readonly_fields = ('id', 'round', 'game')
+    list_display    = ('id', linkify('bracket_item'), linkify('game'))
+    search_fields   = ('bracket_item__id', 'game__id')
+    readonly_fields = ('id', 'bracket_item', 'game')

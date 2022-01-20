@@ -18,7 +18,7 @@ from django.shortcuts import redirect
 from django.contrib import admin
 from django.urls import path
 
-from pages.views import home_view, games_view, game_view, leaderboard_view
+from pages.views import home_view, games_view, game_view, leaderboard_view, tournament_view
 from pages.api import game_counter
 
 urlpatterns = [
@@ -28,6 +28,7 @@ urlpatterns = [
     path('game/', game_view, name = 'game'),
     path('game/<str:game_id>/', game_view, name = 'game'),
     path('leaderboard/', leaderboard_view, name = 'leaderboard'),
+    path('tournament/<str:tournament_id>/', tournament_view, name = 'tournament'),
     path('admin/', admin.site.urls),
     path('logs/', include('log_viewer.urls')),
     path('api/game_counter', game_counter),

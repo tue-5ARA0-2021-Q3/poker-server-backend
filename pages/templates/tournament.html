@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load length_to_word %}
+{% block content %}
+    <div id="tournament">        
+        <div class="ui large header">Tournament results</div>
+        {% if not tournament_found %}
+
+            <div class="ui placeholder segment">
+                <div class="ui icon header">
+                    <i class="exclamation triangle icon"></i>
+                    <div class="content">
+                        There is no tournament with the provided UUID
+                        <div class="sub header">Please double check that you have entered tournament UUID correctly</div>
+                    </div>
+
+                </div>
+                <div class="inline">
+                    <a class="ui button" href="/tournament" rel="noopener">Go back</a>
+                </div>
+            </div>
+
+        {% else %}
+            
+            <div class="ui center aligned grid padded">
+            {% for round in rounds %}
+                <div class="{% length_to_word round.brackets %} column row">
+                {% for bracket in round.brackets %}
+                    <div class="ui center aligned column">
+                        <div class="ui raised segments" style="margin-left: {% length_to_margin round.brackets %}; margin-right: {% length_to_margin round.brackets %}">
+                        <div class="ui top attached header segment">Game {{ bracket.bracket_item.position }} of round {{ round.round.index }}</div>
+                        <div class="ui attached raised segment center aligned">
+                            <div class="ui two column very relaxed grid">
+                                <div class="column">
+                                    {{ bracket.game.game.player1.name }}
+                                </div>
+                                <div class="column">
+                                    {{ bracket.game.game.player2.name }}
+                                </div>
+                              </div>
+                              <div class="ui vertical divider">
+                                VS
+                              </div>
+                        </div>
+                        <div class="ui bottom raised attached success message">
+                            <i class="chess queen icon"></i>{{ bracket.game.game.winner.name }}
+                        </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% endfor %}
+            </div>
+
+        {% endif %}
+    </div>
+{% endblock content %}

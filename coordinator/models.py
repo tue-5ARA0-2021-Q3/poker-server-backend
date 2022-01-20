@@ -189,11 +189,11 @@ class TournamentRound(models.Model):
 class TournamentRoundBracketItem(models.Model):
     id         = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
     position   = models.IntegerField(validators = [ MinValueValidator(1) ], null = False)
-    tournament = models.ForeignKey(Tournament, on_delete = models.CASCADE, null = False)
+    round      = models.ForeignKey(TournamentRound, on_delete = models.CASCADE, null = False)
     player1    = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'players_player1')
     player2    = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'players_player2')
 
 class TournamentRoundGame(models.Model):
-    id    = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
-    round = models.ForeignKey(TournamentRound, on_delete = models.CASCADE, null = False)
-    game  = models.ForeignKey(Game, on_delete = models.CASCADE, null = False)
+    id           = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    bracket_item = models.ForeignKey(TournamentRoundBracketItem, on_delete = models.CASCADE, null = False)
+    game         = models.ForeignKey(Game, on_delete = models.CASCADE, null = False)
