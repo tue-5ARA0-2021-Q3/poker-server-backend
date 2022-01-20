@@ -16,7 +16,7 @@ from coordinator.kuhn.kuhn_game import KuhnGame
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 
-from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player
+from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, Tournament
 
 class KuhnCoordinator(object):
     LobbyBots = []
@@ -166,7 +166,11 @@ class KuhnCoordinator(object):
             if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
                 threading.Thread(target = __spawn_bot, args = [ str(random.choice(bot_players).token) ]).start()
                 self.waiting_room.wait_ready()
-            # In case of a tournament mode we wait for waiting room to be ready and we spawn bots if and only if there are not enough players
+            # In case of the tournament mode we wait for waiting room to be ready and we spawn bots if and only if there are not enough players
+            # The logic here is a bit iffy, but for duel games we spawn bots immediatelly and simply wait for it to connect
+            # However tournament start time is uncertain, and admin may start tournament at any time, so we don't know in advance hom many bot players should connect
+            # Thus we wait for game to be `ready` and in case there are not enough players we mark it as unready again in this procedure
+            # After that we spawn remaining bots and wait for waiting room to be ready again (this time admin cannot interfere with this process) and mark bot lobby as ready
             elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
                 self.waiting_room.wait_ready()
                     
@@ -175,6 +179,8 @@ class KuhnCoordinator(object):
                 # Here we check if we actually have some remaining spots and unset waiting_room.ready() status
                 if remaining > 0:
                     try:
+                        # We sample unique bot players because waiting room implementation accepts only unique connections 
+                        # In case there are not enough player lobby will close. Increase `GENERATE_BOT_PLAYERS` option in case of an error
                         bots = random.sample(bot_players, remaining)
                         self.waiting_room.mark_as_unready()
                         for bot in bots:
@@ -218,18 +224,19 @@ class KuhnCoordinator(object):
             if not self.is_closed():
                 GameCoordinator.objects.filter(id = self.id).update(is_started = True)
 
+                tokens  = self.waiting_room.get_player_tokens()
+                players = list(Player.objects.filter(token__in = tokens))
+
                 # In case of a duel setup we simply spawn one game thread and wait for it to finish redirecting any errors in case
                 if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT or self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER:
-                    tokens  = self.waiting_room.get_player_tokens()
-                    players = list(Player.objects.filter(token__in = tokens))
                     game, winner, unlucky = self.play_duel(players)
                     if game.error != None:
                         raise Exception(game.error)
-                    self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Close))
                 elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
-                    raise Exception('Tournament mode is not implemented')
+                    tournament, place1, place2, place3 = self.play_tournament(players)
                 else:
                     raise Exception(f'Unknown coordinator type { self.coordinator_type }')
+            self.waiting_room.notify_all_players(KuhnCoordinatorMessage(event = KuhnCoordinatorEventTypes.Close))
             self.logger.debug(f'Coordinator { self.id } successfully finalized `run` procedure.')
         except Exception as e:
             # In case of any exception we simply notify all players about error in coordinator logic and close the session
@@ -253,4 +260,8 @@ class KuhnCoordinator(object):
         winner, unlucky = game.play()
 
         return game, winner, unlucky
+
+    def play_tournament(self, players: List[Player]):
+        raise Exception('`play_tournament` procedure is not implemented')
+
 
