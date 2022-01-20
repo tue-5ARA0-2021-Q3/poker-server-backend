@@ -311,7 +311,8 @@ class KuhnCoordinator(object):
 
                 if winner == None or game.error != None:
                     self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')
-                    winner = { 'player_token': random.choice(duel).token }
+                    random_winner_token = random.choice(duel).token
+                    winner = KuhnGameLobbyPlayer(random_winner_token, None, None)
 
                 dbgame = TournamentRoundGame(round = dbround, game = Game.objects.get(id = game.id))
                 dbgame.save()
