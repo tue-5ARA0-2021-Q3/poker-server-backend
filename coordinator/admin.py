@@ -26,8 +26,8 @@ def linkify(field_name):
 
 @admin.register(Player)
 class PlayerAdminModelView(admin.ModelAdmin):
-    list_display    = ('token', 'public_token', 'name', 'email', 'is_disabled', 'is_test', 'is_bot')
-    list_filter     = ('token', 'public_token', 'name', 'email', 'is_disabled', 'is_test', 'is_bot')
+    list_display    = ('token', 'public_token', 'name', 'is_disabled', 'is_test', 'is_bot')
+    list_filter     = ('token', 'public_token', 'name', 'is_disabled', 'is_test', 'is_bot')
     readonly_fields = ('token', 'public_token', 'is_test', 'is_bot')
 
 @admin.register(GameCoordinator)

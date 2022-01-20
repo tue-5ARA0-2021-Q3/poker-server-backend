@@ -12,6 +12,16 @@ from django.utils.timezone import now
 
 from coordinator.kuhn.kuhn_constants import CARD3, CARD4
 
+RandomBotNames = [
+    'Bot (extreme hard)',
+    'Bot (extreme easy)',
+    'Bot (T-1000)',
+    'Bot (Wall-E)',
+    'Bot (C-3PO)',
+    'Bot (AWESOM-O)',
+    'BOT (J.A.R.V.I.S.)'
+]
+
 RandomUserNames = [
     'Unique Sandpiper',
     'Crazy Termite',
@@ -54,6 +64,8 @@ RandomUserNames = [
     'Slovenly Jellyfish',
 ]
 
+def pick_random_botname():
+    return random.choice(RandomBotNames)
 
 def pick_random_username():
     return random.choice(RandomUserNames)
@@ -63,7 +75,6 @@ class Player(models.Model):
     token        = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
     public_token = models.UUIDField(default = uuid.uuid4, editable = False, null = False)
     name         = models.CharField(max_length = 128, null = False, default = pick_random_username)
-    email        = models.EmailField(null = True)
     is_disabled  = models.BooleanField(null = False, editable = True, default = False)
     is_test      = models.BooleanField(null = False, default = False)
     is_bot       = models.BooleanField(null = False, default = False)

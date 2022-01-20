@@ -4,6 +4,7 @@ from backend.settings import *
 # Note that setting on an actual server used for assignments might (and will) be different
 
 GENERATE_TEST_PLAYERS = 2
+GENERATE_BOT_PLAYERS = 16
 
 CARD_GENERATED_IMAGE_SIZE = 32
 CARD_GENERATED_IMAGE_NOISE_LEVEL = 0.15

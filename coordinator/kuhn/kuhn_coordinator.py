@@ -144,18 +144,15 @@ class KuhnCoordinator(object):
         elif self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_PLAYER or self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS:
             pass
         else:
-            bot_players = Player.objects.filter(is_bot = True)
+            bot_players = list(Player.objects.filter(is_bot = True))
 
             if len(bot_players) == 0:
                 self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot players in the database.')
 
-            bot_player = random.choice(bot_players)
-            bot_token  = str(bot_player.token)
-
             if len(KuhnCoordinator.LobbyBots) == 0:
                 self.close(f'Coordinator { self.id } attempts to add bot players, but there are not registered bot implementations.')
 
-            def __spawn_bot():
+            def __spawn_bot(bot_token):
                 try: 
                     bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
                     self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
@@ -167,7 +164,7 @@ class KuhnCoordinator(object):
 
             # In case of duel with a bot we instantiate bot thread immediatelly
             if self.coordinator_type == GameCoordinatorTypes.DUEL_PLAYER_BOT:
-                threading.Thread(target = __spawn_bot).start()
+                threading.Thread(target = __spawn_bot, args = [ str(random.choice(bot_players).token) ]).start()
                 self.waiting_room.wait_ready()
             # In case of a tournament mode we wait for waiting room to be ready and we spawn bots if and only if there are not enough players
             elif self.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS:
@@ -177,9 +174,13 @@ class KuhnCoordinator(object):
 
                 # Here we check if we actually have some remaining spots and unset waiting_room.ready() status
                 if remaining > 0:
-                    self.waiting_room.mark_as_unready()
-                    for _ in range(remaining):
-                        threading.Thread(target = __spawn_bot).start()
+                    try:
+                        bots = random.sample(bot_players, remaining)
+                        self.waiting_room.mark_as_unready()
+                        for bot in bots:
+                            threading.Thread(target = __spawn_bot, args = [ str(bot.token) ]).start()
+                    except Exception as e:
+                        self.close(error = f'Could not fill tournament with players. Error: { str(e) }')
 
                 self.waiting_room.wait_ready()
 
