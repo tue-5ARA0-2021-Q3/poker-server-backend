@@ -24,11 +24,11 @@ def length_to_margin(iterable):
     if n == 1:
         return '35%'
     elif n == 2:
-        return '15%'
+        return '20%'
     elif n == 4:
-        return '5%'
+        return '1%'
     elif n == 8:
-        return '2%'
+        return '0%'
     elif n == 16:
         return '0%'
     else:

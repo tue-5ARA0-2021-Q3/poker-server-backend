@@ -10,8 +10,9 @@ class CoordinatorConfig(AppConfig):
     name = 'coordinator'
 
     def start_grpc_server(self):
+        from django.conf import settings
         command = grpcrunserver.Command()
-        command.handle(addrport = 'localhost:50051', max_workers = 10, use_reloader = False)
+        command.handle(addrport = settings.GRPC_SERVER_ADDRPORT, max_workers = settings.GRPC_MAX_WORKERS, use_reloader = settings.GRPC_USE_RELOADER)
 
     def grpc_on_server_init(self, server, **kwargs):
         from coordinator.services import GameCoordinatorService

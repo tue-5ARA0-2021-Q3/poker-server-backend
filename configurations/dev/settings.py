@@ -3,6 +3,11 @@ from backend.settings import *
 # This settings are for dev version of a local poker server
 # Note that setting on an actual server used for assignments might (and will) be different
 
+GRPC_SERVER_ADDRPORT = 'localhost:50051'
+GRPC_MAX_WORKERS = 64 # Note that each player reserves one worker, if this setting is low tournament may not be even able to start
+GRPC_USE_RELOADER = False
+
+
 GENERATE_TEST_PLAYERS = 2
 GENERATE_BOT_PLAYERS = 16
 

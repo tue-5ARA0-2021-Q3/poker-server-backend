@@ -21,25 +21,19 @@
 
         {% else %}
             
-            <div class="ui center aligned grid padded">
+            <div class="ui center aligned grid vertically divided">
             {% for round in rounds %}
-                <div class="{% length_to_word round.brackets %} column row">
+                <div class="{% length_to_word round.brackets %} column stretched row">
                 {% for bracket in round.brackets %}
                     <div class="ui center aligned column">
                         <div class="ui raised segments" style="margin-left: {% length_to_margin round.brackets %}; margin-right: {% length_to_margin round.brackets %}">
                         <div class="ui top attached header segment">Game {{ bracket.bracket_item.position }} of round {{ round.round.index }}</div>
                         <div class="ui attached raised segment center aligned">
-                            <div class="ui two column very relaxed grid">
-                                <div class="column">
-                                    {{ bracket.game.game.player1.name }}
-                                </div>
-                                <div class="column">
-                                    {{ bracket.game.game.player2.name }}
-                                </div>
-                              </div>
-                              <div class="ui vertical divider">
+                            {{ bracket.game.game.player1.name }}
+                            <div class="ui horizontal divider">
                                 VS
-                              </div>
+                            </div>
+                            {{ bracket.game.game.player2.name }}
                         </div>
                         <div class="ui bottom raised attached success message">
                             <i class="chess queen icon"></i>{{ bracket.game.game.winner.name }}
