@@ -16,7 +16,7 @@ from coordinator.kuhn.kuhn_game import KuhnGame
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
 
-from coordinator.models import GameCoordinator, GameCoordinatorTypes, Player, Tournament
+from coordinator.models import Game, GameCoordinator, GameCoordinatorTypes, Player, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame
 
 class KuhnCoordinator(object):
     LobbyBots = []
@@ -282,17 +282,40 @@ class KuhnCoordinator(object):
     def play_tournament(self, players: List[Player]):
 
         # First we create tournament bracket based on number of players
+        dbtournament = Tournament.objects.get(coordinator__id = self.id)
 
         remaining_players = players.copy()
 
         round = 1
 
         while len(remaining_players) != 1:
+            
+            dbround = TournamentRound(tournament = dbtournament, index = round)
+            dbround.save()
+
+            self.logger.info(f'Starting round { round } of the tournament for coordinator { self.id }')
+
             bracket = self.make_bracket(remaining_players)
             winners = []
 
+            for (index, item) in enumerate(bracket):
+                dbitem = TournamentRoundBracketItem(position = index + 1, tournament = dbtournament, player1 = item[0], player2 = item[1])
+                dbitem.save()
+            
+            self.logger.info(f'Bracket has been created for round { round } of the tournament for coordinator { self.id }')
+
             for duel in bracket:
+                self.logger.info(f'Starting a single duel within the tournament for coordinator { self.id }')
+
                 game, winner, unlucky = self.play_duel(duel)
+
+                if winner == None or game.error != None:
+                    self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')
+                    winner = { 'player_token': random.choice(duel).token }
+
+                dbgame = TournamentRoundGame(round = dbround, game = Game.objects.get(id = game.id))
+                dbgame.save()
+
                 winners.append(winner)
 
             remaining_players = list(Player.objects.filter(token__in = list(map(lambda d: d.player_token, winners))))

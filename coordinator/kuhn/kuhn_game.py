@@ -42,6 +42,8 @@ class KuhnGame(object):
     def play(self):
         try:
             self.logger.debug(f'Kuhn game { self.id } initiated `play` procedure.')
+
+            Game.objects.filter(id = self.id).update(is_started = True)
             
             # First both players receive an instruction to start a new game
             for player in self.get_players():

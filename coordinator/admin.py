@@ -65,10 +65,10 @@ class GameRoundAdminModelView(admin.ModelAdmin):
 
 @admin.register(Tournament)
 class TournamentAdminModelView(admin.ModelAdmin):
-    list_display    = ('id', linkify('coordinator'), linkify('place1'), linkify('place2'), linkify('place3'), 'timeout', 'capacity', 'allow_bots', 'is_started', 'game_type')
+    list_display    = ('id', linkify('coordinator'), linkify('place1'), linkify('place2'), 'timeout', 'capacity', 'allow_bots', 'is_started', 'game_type')
     list_filter     = ('is_started', 'allow_bots', 'capacity')
-    search_fields   = ('id', 'coordinator__id', 'place1__token', 'place2__token', 'place3__token')
-    readonly_fields = ('id', 'coordinator', 'place1', 'place2', 'place3')
+    search_fields   = ('id', 'coordinator__id', 'place1__token', 'place2__token')
+    readonly_fields = ('id', 'coordinator', 'place1', 'place2')
 
 @admin.register(TournamentRound)
 class TournamentRoundModelView(admin.ModelAdmin):
