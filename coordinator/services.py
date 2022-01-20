@@ -4,6 +4,7 @@ import time
 import traceback
 import threading
 import logging
+from django.db.models.signals import post_save
 from coordinator.kuhn.kuhn_constants import resolve_kuhn_type, CoordinatorActions
 from coordinator.kuhn.kuhn_coordinator import KuhnCoordinator, KuhnCoordinatorEventTypes, KuhnCoordinatorMessage
 
@@ -271,7 +272,9 @@ class GameCoordinatorService(Service):
 
         callback_active = False
 
-    def on_tournament_create(self, sender, instance, created, raw, using, update_fields, **kwargs):
+    @staticmethod
+    @receiver(post_save, sender = Tournament)
+    def on_tournament_create(sender, instance, created, raw, using, update_fields, **kwargs):
         # Once tournament has been created we add a new coordinator for it automatically
         if created:
             GameCoordinatorService.logger.debug(f'Creating coordinator instance for Tournament { instance.id }')

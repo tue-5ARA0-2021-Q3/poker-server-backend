@@ -21,8 +21,6 @@ from django.urls import path
 from pages.views import home_view, games_view, game_view, leaderboard_view
 from pages.api import game_counter
 
-from coordinator.handlers import game_coordinator_handlers
-
 urlpatterns = [
     path('', lambda req: redirect('/home/')),
     path('home/', home_view, name = 'home'),
@@ -34,7 +32,3 @@ urlpatterns = [
     path('logs/', include('log_viewer.urls')),
     path('api/game_counter', game_counter),
 ]
-
-
-def grpc_handlers(server):
-    game_coordinator_handlers(server)
