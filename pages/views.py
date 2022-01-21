@@ -66,7 +66,7 @@ def game_view(request, *args, **kwargs):
 
         context['is_game_found'] = True
         context['game']          = game
-        context['rounds']        = list(GameRound.objects.filter(game__id = game.id))
+        context['rounds']        = list(GameRound.objects.filter(game__id = game.id))[:-1]
 
         return render(request, "game.html", context)
     except Exception as e:

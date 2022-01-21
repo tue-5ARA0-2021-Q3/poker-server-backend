@@ -20,25 +20,36 @@
             </div>
 
         {% else %}
-            
-            <div class="ui center aligned grid vertically divided">
+            <div class="ui center aligned grid">
             {% for round in rounds %}
+                <div class="ui one column row">
+                    <div class="ui column">
+                    <div class="ui horizontal divider">
+                        Round {{ round.round.index }}
+                    </div>
+                    </div>
+                </div>
                 <div class="{% length_to_word round.brackets %} column stretched row">
                 {% for bracket in round.brackets %}
-                    <div class="ui center aligned column">
+                    <div class="ui center aligned column" style="margin-top: 20px">
                         <div class="ui raised segments" style="margin-left: {% length_to_margin round.brackets %}; margin-right: {% length_to_margin round.brackets %}">
-                        <div class="ui top attached header segment">Game {{ bracket.bracket_item.position }} of round {{ round.round.index }}</div>
-                        <div class="ui attached raised segment center aligned">
+                        <h5 class="ui top attached left aligned clearing header segment">
+                            <div class="content">
+                                Game {{ bracket.bracket_item.position }} of Round {{ round.round.index }}
+                                <div class="sub header">
+                                    <a href="/game/{{ bracket.game.game.id }}" rel="noopener">Game logs</a>
+                                </div>
+                              </div>
+                        </h5>
+                        <div class="ui attached {% if bracket.game.game.winner == bracket.game.game.player1 %} success {% else %} error {% endif %} message">
+                            {% comment %} <i class="chess queen icon"></i> {% endcomment %}
                             {{ bracket.game.game.player1.name }}
-                            <div class="ui horizontal divider">
-                                VS
-                            </div>
+                        </div>
+                        <div class="ui bottom attached {% if bracket.game.game.winner == bracket.game.game.player2 %} success {% else %} error {% endif %} message">
+                            {% comment %} <i class="chess queen icon"></i> {% endcomment %}
                             {{ bracket.game.game.player2.name }}
                         </div>
-                        <div class="ui bottom raised attached success message">
-                            <i class="chess queen icon"></i>{{ bracket.game.game.winner.name }}
-                        </div>
-                        <a href="/game/{{ bracket.game.game.id }}">Logs</a>
+                        {% comment %} <a href="/game/{{ bracket.game.game.id }}">Logs</a> {% endcomment %}
                         </div>
                     </div>
                 {% endfor %}
