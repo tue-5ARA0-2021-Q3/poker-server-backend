@@ -8,7 +8,7 @@ GRPC_MAX_WORKERS = 64 # Note that each player reserves one worker, if this setti
 GRPC_USE_RELOADER = False
 
 
-GENERATE_TEST_PLAYERS = 2
+GENERATE_TEST_PLAYERS = 4
 GENERATE_BOT_PLAYERS = 16
 
 CARD_GENERATED_IMAGE_SIZE = 32

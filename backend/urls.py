@@ -18,14 +18,14 @@ from django.shortcuts import redirect
 from django.contrib import admin
 from django.urls import path
 
-from pages.views import home_view, games_view, game_view, leaderboard_view, tournament_view
+from pages.views import game_search_view, home_view, games_view, game_view, leaderboard_view, tournament_view
 from pages.api import game_counter
 
 urlpatterns = [
     path('', lambda req: redirect('/home/')),
     path('home/', home_view, name = 'home'),
     path('games/', games_view, name = 'games'),
-    path('game/', game_view, name = 'game'),
+    path('game/', game_search_view, name = 'game_search'),
     path('game/<str:game_id>/', game_view, name = 'game'),
     path('leaderboard/', leaderboard_view, name = 'leaderboard'),
     path('tournament/<str:tournament_id>/', tournament_view, name = 'tournament'),

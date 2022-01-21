@@ -4,11 +4,8 @@
           <a class="item {% if url_name == 'home' %} active {% endif %}" href="{% url 'home' %}">
             <i class="home icon"></i> Home
           </a>
-          <a class="item {% if url_name == 'games' %} active {% endif %}" href="{% url 'games' %}">
+          <a class="item {% if url_name == 'games' or url_name == 'game' %} active {% endif %}" href="{% url 'games' %}">
             <i class="grid layout icon"></i> Browse games
-          </a>
-          <a class="item {% if url_name == 'game' %} active {% endif %}" href="{% url 'game' %}">
-            <i class="search icon"></i> Search game
           </a>
           <a class="item  {% if url_name == 'leaderboard' %} active {% endif %}" href="{% url 'leaderboard' %}">
             <i class="chess queen icon"></i> Leaderboard

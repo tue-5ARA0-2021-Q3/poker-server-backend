@@ -1,7 +1,12 @@
 import datetime
+from urllib import request
 from django.shortcuts import render
 from coordinator.models import Game, GameCoordinator, GameRound, Player, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame
 from django.db.models import Q
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+
+from pages.forms import SearchGameForm
 
 # Create your views here.
 
@@ -10,26 +15,46 @@ def home_view(request, *args, **kwargs):
 
 def games_view(request, *args, **kwargs):
     return render(request, "games.html", {
-        'games': Game.objects.all().order_by('-created_at')[:50]
+        'games': Game.objects.all().order_by('-created_at')[:50],
+        'form': kwargs['form'] if 'form' in kwargs else SearchGameForm()
     })
 
-# TODO game search view
+def game_search_view(request, *args, **kwargs):
+    if request.method == 'POST':
+        form = SearchGameForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            id = form.cleaned_data['game_or_coordinator_id']
+            return HttpResponseRedirect(f'/game/{ id }/')
+        return games_view(request, form = form)
+    return HttpResponseRedirect("/games/")
+    
+
 def game_view(request, *args, **kwargs):
-    context = {}
+    id = kwargs['game_id']
 
-    if 'game_id' not in kwargs:
-        context['is_game_id_provided'] = False
-    else:
-        try:
-            game = Game.objects.get(id = kwargs['game_id'])
-            context['is_game_found'] = True
-            context['game']   = game
-            context['rounds'] = list(GameRound.objects.filter(game__id = game.id))
-        except Exception as e:
-            context['is_game_found'] = False
-        
-    return render(request, "game.html", context)
+    try:
+        context = {}
 
+        game  = None
+        games_by_id  = Game.objects.filter(id = id)
+        games_by_cid = Game.objects.filter(created_by__id = id)
+
+        if len(games_by_id) != 0:
+            game = games_by_id[0]
+        elif len(games_by_cid) != 0:
+            game = games_by_cid[0]
+
+        if game == None:
+            raise ValueError() 
+
+        context['is_game_found'] = True
+        context['game']          = game
+        context['rounds']        = list(GameRound.objects.filter(game__id = game.id))
+
+        return render(request, "game.html", context)
+    except Exception as e:
+        return render(request, "game.html", { 'is_game_found': False })
 
 def leaderboard_view(request, *args, **kwargs):
     leaderboard = []
@@ -83,5 +108,4 @@ def tournament_view(request, *args, **kwargs):
             'rounds': rounds_data,
         })
     except Exception as e:
-        print(e)
         return render(request, "tournament.html", { 'tournament_found': False })

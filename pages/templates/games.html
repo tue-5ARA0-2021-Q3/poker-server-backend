@@ -2,6 +2,24 @@
 
 {% block content %}
     <div id="games">
+
+        <div class="ui container">
+            <form class="ui form error" action="/game/" method="post">
+                {% csrf_token %}
+                <div class="field">
+                    <input id="id_game_or_coordinator_id" type="text" name="game_or_coordinator_id" placeholder="Enter game or coordinator UUID" value="{{ form.game_or_coordinator.value }}">
+                </div>
+                {% if form.game_or_coordinator_id.errors %}
+                    {% for error in form.game_or_coordinator_id.errors %}
+                        <div class="ui error message">
+                            <div class="header">UUID</div>
+                            <p>{{ error|escape}}</p>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <button class="ui blue button right labeled icon" type="submit"><i class="search icon"></i>Search</button>
+            </form>
+
         <div class="ui large header">Last {{ games|length }} played games</div>
         <table class="ui celled compact table">
             <thead>
