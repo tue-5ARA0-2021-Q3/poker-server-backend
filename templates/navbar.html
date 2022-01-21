@@ -7,6 +7,9 @@
           <a class="item {% if url_name == 'games' or url_name == 'game' %} active {% endif %}" href="{% url 'games' %}">
             <i class="grid layout icon"></i> Browse games
           </a>
+          <a class="item  {% if url_name == 'tournaments' %} active {% endif %}" href="{% url 'tournaments' %}">
+            <i class="sitemap icon"></i> Browse tournaments
+          </a>
           <a class="item  {% if url_name == 'leaderboard' %} active {% endif %}" href="{% url 'leaderboard' %}">
             <i class="chess queen icon"></i> Leaderboard
           </a>

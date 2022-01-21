@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 
-from pages.forms import SearchGameForm
+from pages.forms import SearchGameForm, SearchTournamentForm
 
 # Create your views here.
 
@@ -19,6 +19,12 @@ def games_view(request, *args, **kwargs):
         'form': kwargs['form'] if 'form' in kwargs else SearchGameForm()
     })
 
+def tournaments_view(request, *args, **kwargs):
+    return render(request, "tournaments.html", {
+        'tournaments': Tournament.objects.all().order_by('-created_at')[:50],
+        'form': kwargs['form'] if 'form' in kwargs else SearchTournamentForm()
+    })
+
 def game_search_view(request, *args, **kwargs):
     if request.method == 'POST':
         form = SearchGameForm(request.POST)
@@ -28,6 +34,16 @@ def game_search_view(request, *args, **kwargs):
             return HttpResponseRedirect(f'/game/{ id }/')
         return games_view(request, form = form)
     return HttpResponseRedirect("/games/")
+
+def tournament_search_view(request, *args, **kwargs):
+    if request.method == 'POST':
+        form = SearchTournamentForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            id = form.cleaned_data['tournament_or_coordinator_id']
+            return HttpResponseRedirect(f'/tournament/{ id }/')
+        return tournaments_view(request, form = form)
+    return HttpResponseRedirect("/tournaments/")
     
 
 def game_view(request, *args, **kwargs):

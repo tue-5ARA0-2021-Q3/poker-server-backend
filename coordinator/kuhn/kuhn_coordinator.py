@@ -315,7 +315,7 @@ class KuhnCoordinator(object):
 
                 game, winner, unlucky = self.play_duel(duel)
 
-                if winner == None or game.error != None:
+                if winner == None or game.error == None:
                     self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')
                     random_winner_token = random.choice(duel).token
                     winner = KuhnGameLobbyPlayer(random_winner_token, None, None)
@@ -328,6 +328,8 @@ class KuhnCoordinator(object):
             remaining_players = list(Player.objects.filter(token__in = list(map(lambda d: d.player_token, winners))))
 
             round = round + 1
+
+        Tournament.objects.filter(id = dbtournament.id).update(place1 = Player.objects.get(token = remaining_players[0].token))
 
         self.logger.info(f'We have a winner for a tournament: { self.id } - { remaining_players[0].token }')
 

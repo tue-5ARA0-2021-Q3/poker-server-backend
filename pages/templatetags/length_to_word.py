@@ -12,11 +12,11 @@ def length_to_word(iterable):
     elif n == 4:
         return 'four'
     elif n == 8:
-        return 'eight'
+        return 'four'
     elif n == 16:
-        return 'sixteen'
+        return 'four'
     else:
-        return 'unsupported'
+        return 'four'
 
 @register.simple_tag
 def length_to_margin(iterable):

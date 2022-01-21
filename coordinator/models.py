@@ -172,6 +172,7 @@ class GameRound(models.Model):
 
 class Tournament(models.Model):
     id          = models.UUIDField(primary_key = True, default = uuid.uuid4, editable = False)
+    created_at  = models.DateTimeField(auto_now_add = True)
     coordinator = models.ForeignKey(GameCoordinator, on_delete = models.CASCADE, null = True)
     place1      = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'places_1')
     place2      = models.ForeignKey(Player, on_delete = models.CASCADE, null = True, related_name = 'places_2')
