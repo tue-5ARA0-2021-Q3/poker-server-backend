@@ -330,8 +330,12 @@ class KuhnCoordinator(object):
 
                 if winner == None or game.error != None:
                     self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')
-                    random_winner_token = random.choice(duel).token
-                    winner = KuhnGameLobbyPlayer(random_winner_token, None, None)
+                    disconnected_player = game.check_any_disconnected()
+                    if disconnected_player != None:
+                        winner = game.get_player_opponent(disconnected_player)
+                    else:
+                        random_winner_token = random.choice(duel).token
+                        winner = KuhnGameLobbyPlayer(random_winner_token, None, None)
 
                 dbgame = TournamentRoundGame(bracket_item = dbbracket, game = Game.objects.get(id = game.id))
                 dbgame.save()
