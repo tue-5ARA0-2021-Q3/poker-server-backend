@@ -111,6 +111,9 @@ class KuhnWaitingRoom(object):
         with self.lock:
             self.disconnected[player_token] = True
 
+    def is_registered(self, player_token: str):
+        with self.lock:
+            return player_token in self.player_channels
 
     def register_player(self, player_token: str):
         with self.lock:

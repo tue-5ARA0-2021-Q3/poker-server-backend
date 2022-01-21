@@ -52,11 +52,23 @@ class KuhnGame(object):
             # Server creates a new round, but both player must send a `ROUND` action first to accept the invitation
             current_round = self.create_new_round()
 
+            game_end_confirmed = 0
+
             # We run an inner cycle until lobby is closed or to process last messages after lobby has been closed
-            while not self.is_finished() or not self.channel.empty():
+            while (not self.is_finished()) or (not self.channel.empty()) or (game_end_confirmed < 2):
                 try:
                     # Game coordinator waits for a message from any player
                     message = self.channel.get(timeout = KuhnGame.MessagesTimeout)
+
+                    player = self.get_player(message.player_token)
+
+                    if player == None:
+                        self.logger.warning(f'Received a message from unregistered player { message.player_token }: { message.action }')
+                        if self.coordinator.waiting_room.is_registered(message.player_token) and not self.coordinator.waiting_room.is_disconnected(message.player_token):
+                            maybe_waiting_player_channel = self.coordinator.waiting_room.get_player_channel(message.player_token)
+                            maybe_waiting_player_channel.put(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                            maybe_waiting_player_channel.join()
+                        continue
 
                     self.logger.info(f'Received message from player { message.player_token }: { message.action }')
 
@@ -65,13 +77,16 @@ class KuhnGame(object):
                     #  First we check if someone disconnected and end the game
                     if disconnected is not None and not self.is_finished():
                         self.logger.warning(f'Player { disconnected.player_token } has been disconnected from running game { self.id }.')
-                        # We force finish we game, the player whoвшысщттусеув loses the entire game
+                        # We force finish we game, the player who loses the entire game
                         opponent = self.get_player_opponent(disconnected.player_token)
                         self.force_winner(opponent.player_token)
                         self.finish()
                         # Notify remaining player about the result of the game
                         opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentDisconnected, actions = [ CoordinatorActions.Wait ]))
                         opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameResult, game_result = self.player_outcome(opponent.player_token)))
+                    elif message.action == CoordinatorActions.ConfirmEndGame and self.is_finished():
+                        game_end_confirmed = game_end_confirmed + 1
+                        break
                     # We check if the message is about to start a new round
                     # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
                     elif message.action == CoordinatorActions.NewRound:
@@ -138,7 +153,7 @@ class KuhnGame(object):
 
                 except queue.Empty:
                     if self.is_finished():
-                        return
+                        break
                     raise Exception(f'There was no message from player for more than { KuhnGame.MessagesTimeout } sec.')
 
         except Exception as e:

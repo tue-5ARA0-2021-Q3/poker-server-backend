@@ -11,7 +11,7 @@ from enum import Enum
 from typing import List
 
 from django.conf import settings
-from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR, KuhnCoordinatorMessage, KuhnCoordinatorEventTypes
+from coordinator.kuhn.kuhn_constants import KUHN_TYPE_TO_STR, CoordinatorActions, KuhnCoordinatorMessage, KuhnCoordinatorEventTypes
 from coordinator.kuhn.kuhn_game import KuhnGame
 from coordinator.kuhn.kuhn_player import KuhnGameLobbyPlayer
 from coordinator.kuhn.kuhn_waiting_room import KuhnWaitingRoom
@@ -312,8 +312,18 @@ class KuhnCoordinator(object):
             # For each item in bracket we play a standard duel game and create a `TournamentRoundGame` database record at the end
             for duel, dbbracket in zip(bracket, dbbrackets):
                 self.logger.info(f'Starting a single duel within the tournament for coordinator { self.id }')
-
                 game, winner, unlucky = self.play_duel(duel)
+                self.logger.info(f'Ending a single duel within the tournament for coordinator { self.id }')
+
+                time.sleep(settings.COORDINATOR_TOURNAMENT_GRACE_PERIOD)
+
+                while not self.channel.empty():
+                    message = self.channel.get()
+                    self.logger.warning(f'Remaining message { message } after duel has ended')
+                    if self.waiting_room.is_registered(message.player_token) and not self.waiting_room.is_disconnected(message.player_token):
+                        maybe_waiting_player_channel = self.waiting_room.get_player_channel(message.player_token)
+                        maybe_waiting_player_channel.put(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                        maybe_waiting_player_channel.join()
 
                 if winner == None or game.error != None:
                     self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')

@@ -80,6 +80,8 @@ class CoordinatorActions(str, Enum):
     Wait = 'WAIT'
     IsAlive = 'IS_ALIVE'
     Disconnected = 'DISCONNECTED'
+    ConfirmEndGame = 'CONFIRM_END_GAME'
+    
 
 class KuhnCoordinatorEventTypes(Enum):
     GameStart = 1
