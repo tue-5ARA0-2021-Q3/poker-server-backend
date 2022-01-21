@@ -235,14 +235,14 @@ class GameCoordinatorService(Service):
                                 raise Exception(f'Unexpected event type from lobby response: { response }')
                         else:
                             raise Exception(f'Unexpected response type from lobby: { response }')
+
+                        player_channel.task_done()    
                     except queue.Empty:
                         if coordinator.is_closed() and player_channel.empty():
                             coordinator.logger.error(f'Coordinator has been finished while waiting for response from player.')
                             if coordinator.error != None:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.Error, error = coordinator.error)
-                                return    
-
-                player_channel.task_done()            
+                                return          
 
             callback_active = False
 

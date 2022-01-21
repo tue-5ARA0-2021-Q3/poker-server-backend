@@ -86,7 +86,7 @@ class KuhnGame(object):
                         opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameResult, game_result = self.player_outcome(opponent.player_token)))
                     elif message.action == CoordinatorActions.ConfirmEndGame and self.is_finished():
                         game_end_confirmed = game_end_confirmed + 1
-                        break
+                        continue
                     # We check if the message is about to start a new round
                     # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
                     elif message.action == CoordinatorActions.NewRound:
