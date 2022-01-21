@@ -55,7 +55,7 @@ class KuhnGame(object):
             game_end_confirmed = 0
 
             # We run an inner cycle until lobby is closed or to process last messages after lobby has been closed
-            while (not self.is_finished()) or (not self.channel.empty()) or (game_end_confirmed < 2):
+            while (not self.is_finished()) or (not self.channel.empty()) or (game_end_confirmed < len(self.get_players())):
                 try:
                     # Game coordinator waits for a message from any player
                     message = self.channel.get(timeout = KuhnGame.MessagesTimeout)
@@ -84,6 +84,7 @@ class KuhnGame(object):
                         # Notify remaining player about the result of the game
                         opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentDisconnected, actions = [ CoordinatorActions.Wait ]))
                         opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameResult, game_result = self.player_outcome(opponent.player_token)))
+                        break
                     elif message.action == CoordinatorActions.ConfirmEndGame and self.is_finished():
                         game_end_confirmed = game_end_confirmed + 1
                         continue
