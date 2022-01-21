@@ -315,7 +315,7 @@ class KuhnCoordinator(object):
 
                 game, winner, unlucky = self.play_duel(duel)
 
-                if winner == None or game.error == None:
+                if winner == None or game.error != None:
                     self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')
                     random_winner_token = random.choice(duel).token
                     winner = KuhnGameLobbyPlayer(random_winner_token, None, None)
