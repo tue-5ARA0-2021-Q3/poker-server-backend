@@ -157,9 +157,10 @@ class GameCoordinatorService(Service):
 
                 # Waiting for a response from the game coordinator about another player's decision and available actions
                 response = None
-                if (not coordinator.is_closed() and response is None) or not player_channel.empty():
+                while (not coordinator.is_closed() and response is None) or not player_channel.empty():
                     try:
                         response = player_channel.get(timeout = settings.COORDINATOR_WAITING_TIMEOUT)
+                        self.logger.debug(f'Processing message { response } for player { token }')
                         if isinstance(response, KuhnCoordinatorMessage):
                             if response.event == KuhnCoordinatorEventTypes.GameStart:
                                 yield game_pb2.PlayGameResponse(event = game_pb2.PlayGameResponse.PlayGameResponseEvent.GameStart)

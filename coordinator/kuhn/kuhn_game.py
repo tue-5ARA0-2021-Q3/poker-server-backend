@@ -285,7 +285,7 @@ class KuhnGame(object):
                 self.logger.info(f'A new round has been created. First player is { _first_player.player_token }')
                 return _round
             else:
-                self._logger.error('It is not allowed to start a new round while previous one is not completed')
+                self.logger.error('It is not allowed to start a new round while previous one is not completed')
                 raise Exception('It is not allowed to start a new round while previous one is not completed')
 
     def start_new_round(self, player_token):

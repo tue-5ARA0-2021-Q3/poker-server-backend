@@ -318,12 +318,15 @@ class KuhnCoordinator(object):
                 time.sleep(settings.COORDINATOR_TOURNAMENT_GRACE_PERIOD)
 
                 while not self.channel.empty():
-                    message = self.channel.get()
-                    self.logger.warning(f'Remaining message { message } after duel has ended')
-                    if self.waiting_room.is_registered(message.player_token) and not self.waiting_room.is_disconnected(message.player_token):
-                        maybe_waiting_player_channel = self.waiting_room.get_player_channel(message.player_token)
-                        maybe_waiting_player_channel.put(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
-                        maybe_waiting_player_channel.join()
+                    try:
+                        message = self.channel.get(timeout = settings.COORDINATOR_WAITING_TIMEOUT)
+                        self.logger.warning(f'Remaining message { message } after duel has ended')
+                        if self.waiting_room.is_registered(message.player_token) and not self.waiting_room.is_disconnected(message.player_token):
+                            maybe_waiting_player_channel = self.waiting_room.get_player_channel(message.player_token)
+                            maybe_waiting_player_channel.put(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                            maybe_waiting_player_channel.join()
+                    except Exception:
+                        pass
 
                 if winner == None or game.error != None:
                     self.logger.warning('Unfinished game in the tournament with coordinator { self.id }. Choosing random winner.')
