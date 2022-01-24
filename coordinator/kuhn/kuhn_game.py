@@ -44,118 +44,124 @@ class KuhnGame(object):
             self.logger.debug(f'Kuhn game { self.id } initiated `play` procedure.')
 
             Game.objects.filter(id = self.id).update(is_started = True)
-            
-            # First both players receive an instruction to start a new game
-            for player in self.get_players():
-                player.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameStart))
 
-            # Server creates a new round, but both player must send a `ROUND` action first to accept the invitation
-            current_round = self.create_new_round()
+            disconnected_before_game = self.check_any_disconnected()
 
-            game_end_confirmed = 0
+            if disconnected_before_game != None:
+                self.force_winner(self.get_player_opponent(disconnected_before_game.player_token).player_token)
+                self.finish()
+            else:
+                # First both players receive an instruction to start a new game
+                for player in self.get_players():
+                    player.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameStart))
 
-            # We run an inner cycle until lobby is closed or to process last messages after lobby has been closed
-            while (not self.is_finished()) or (not self.channel.empty()) or (game_end_confirmed < len(self.get_players())):
-                try:
-                    # Game coordinator waits for a message from any player
-                    message = self.channel.get(timeout = KuhnGame.MessagesTimeout)
+                # Server creates a new round, but both player must send a `ROUND` action first to accept the invitation
+                current_round = self.create_new_round()
 
-                    player = self.get_player(message.player_token)
+                game_end_confirmed = 0
 
-                    if player == None:
-                        self.logger.warning(f'Received a message from unregistered player { message.player_token }: { message.action }')
-                        if self.coordinator.waiting_room.is_registered(message.player_token) and not self.coordinator.waiting_room.is_disconnected(message.player_token):
-                            maybe_waiting_player_channel = self.coordinator.waiting_room.get_player_channel(message.player_token)
-                            maybe_waiting_player_channel.put(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
-                            maybe_waiting_player_channel.join()
-                        continue
+                # We run an inner cycle until lobby is closed or to process last messages after lobby has been closed
+                while (not self.is_finished()) or (not self.channel.empty()) or (game_end_confirmed < len(self.get_players())):
+                    try:
+                        # Game coordinator waits for a message from any player
+                        message = self.channel.get(timeout = KuhnGame.MessagesTimeout)
 
-                    self.logger.info(f'Received message from player { message.player_token }: { message.action }')
+                        player = self.get_player(message.player_token)
 
-                    disconnected = self.check_any_disconnected()
+                        if player == None:
+                            self.logger.warning(f'Received a message from unregistered player { message.player_token }: { message.action }')
+                            if self.coordinator.waiting_room.is_registered(message.player_token) and not self.coordinator.waiting_room.is_disconnected(message.player_token):
+                                maybe_waiting_player_channel = self.coordinator.waiting_room.get_player_channel(message.player_token)
+                                maybe_waiting_player_channel.put(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                                maybe_waiting_player_channel.join()
+                            continue
 
-                    #  First we check if someone disconnected and end the game
-                    if disconnected is not None and not self.is_finished():
-                        self.logger.warning(f'Player { disconnected.player_token } has been disconnected from running game { self.id }.')
-                        # We force finish we game, the player who loses the entire game
-                        opponent = self.get_player_opponent(disconnected.player_token)
-                        self.force_winner(opponent.player_token)
-                        self.finish()
-                        # Notify remaining player about the result of the game
-                        opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentDisconnected, actions = [ CoordinatorActions.Wait ]))
-                        opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameResult, game_result = self.player_outcome(opponent.player_token)))
-                        break
-                    elif message.action == CoordinatorActions.ConfirmEndGame and self.is_finished():
-                        game_end_confirmed = game_end_confirmed + 1
-                        continue
-                    # We check if the message is about to start a new round
-                    # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
-                    elif message.action == CoordinatorActions.NewRound:
-                        if self.check_players_bank():
-                            self.start_new_round(message.player_token)
-                        else:
+                        self.logger.info(f'Received message from player { message.player_token }: { message.action }')
+
+                        disconnected = self.check_any_disconnected()
+
+                        #  First we check if someone disconnected and end the game
+                        if disconnected is not None and not self.is_finished():
+                            self.logger.warning(f'Player { disconnected.player_token } has been disconnected from running game { self.id }.')
+                            # We force finish we game, the player who loses the entire game
+                            opponent = self.get_player_opponent(disconnected.player_token)
+                            self.force_winner(opponent.player_token)
                             self.finish()
-                            self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(
-                                KuhnCoordinatorEventTypes.GameResult, 
-                                game_result = self.player_outcome(message.player_token)
-                            ))
-                    # Second we check if player requests a list of available actions
-                    # That usually happens right after card deal event
-                    elif message.action == CoordinatorActions.AvailableActions:
-                        player  = self.get_player(message.player_token)
-                        inf_set = current_round.stage.public_inf_set()
-                        actions = current_round.stage.actions() if player.player_token == current_round.player_token_turn else [ CoordinatorActions.Wait ]
-                        player.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.NextAction, inf_set = inf_set, actions = actions))
-                    # Wait is an utility message
-                    elif message.action == CoordinatorActions.Wait:
-                        continue
-                    # If message action is not 'START' we check that the message came from a player and assume it is their next action
-                    # We also check if action is valid here and if not we force finishing of the game
-                    elif message.player_token == current_round.player_token_turn and message.action in current_round.stage.actions():
-                        # We register current player's action in an inner stage object
-                        current_round.stage.play(message.action)
-                        if current_round.stage.is_terminal():
-                            # If the stage is terminal we notify both players and we always start a new round even if ssome player has a negative bank
-                            # However we always check players banks in the beginning of each round
-                            for player in self.get_players():
-                                player.send_message(KuhnCoordinatorMessage(
-                                    KuhnCoordinatorEventTypes.RoundResult, 
-                                    evaluation = self.convert_evaluation(current_round.stage.evaluation(), player.player_token), 
-                                    inf_set    = current_round.stage.inf_set()
-                                ))
-                            self.evaluate_round()
-                            current_round = self.create_new_round()
-                        else:
-                            # If the stage is not terminal we swap current's player id and wait for a new action of second player
-                            current_round.player_token_turn = self.get_player_opponent(current_round.player_token_turn).player_token
-                            self.get_player(current_round.player_token_turn).send_message(KuhnCoordinatorMessage(
-                                KuhnCoordinatorEventTypes.NextAction,
-                                inf_set = current_round.stage.public_inf_set(), 
-                                actions = current_round.stage.actions()
-                            ))
-                    # In case if player made an invalid action we force finish the game
-                    elif message.player_token == current_round.player_token_turn and not message.action in current_round.stage.actions():
-                        if not self.is_finished():
-                            # We first notify both players that invalid action has been made
-                            self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
-                            self.get_player_opponent(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentInvalidAction, actions = [ CoordinatorActions.Wait ]))
-                            # We force finish we game, the player who made an invalid actions loses the entire game
-                            self.force_winner(self.get_player_opponent(message.player_token).player_token)
-                            self.finish()
-                            # Notify player about the result of the game
-                            for player in self.get_players():
-                                player.send_message(KuhnCoordinatorMessage(
+                            # Notify remaining player about the result of the game
+                            opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentDisconnected, actions = [ CoordinatorActions.Wait ]))
+                            opponent.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.GameResult, game_result = self.player_outcome(opponent.player_token)))
+                            break
+                        elif message.action == CoordinatorActions.ConfirmEndGame and self.is_finished():
+                            game_end_confirmed = game_end_confirmed + 1
+                            continue
+                        # We check if the message is about to start a new round
+                        # It is possible for a player to send multiple 'START' actions for a single round, but they won't have any effect
+                        elif message.action == CoordinatorActions.NewRound:
+                            if self.check_players_bank():
+                                self.start_new_round(message.player_token)
+                            else:
+                                self.finish()
+                                self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(
                                     KuhnCoordinatorEventTypes.GameResult, 
-                                    game_result = self.player_outcome(player.player_token)
+                                    game_result = self.player_outcome(message.player_token)
                                 ))
-                    else:
-                        self.logger.warning(f'Unexpected message from player = { message.player_token }: [ action = {message.action} ]')
-                        continue
+                        # Second we check if player requests a list of available actions
+                        # That usually happens right after card deal event
+                        elif message.action == CoordinatorActions.AvailableActions:
+                            player  = self.get_player(message.player_token)
+                            inf_set = current_round.stage.public_inf_set()
+                            actions = current_round.stage.actions() if player.player_token == current_round.player_token_turn else [ CoordinatorActions.Wait ]
+                            player.send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.NextAction, inf_set = inf_set, actions = actions))
+                        # Wait is an utility message
+                        elif message.action == CoordinatorActions.Wait:
+                            continue
+                        # If message action is not 'START' we check that the message came from a player and assume it is their next action
+                        # We also check if action is valid here and if not we force finishing of the game
+                        elif message.player_token == current_round.player_token_turn and message.action in current_round.stage.actions():
+                            # We register current player's action in an inner stage object
+                            current_round.stage.play(message.action)
+                            if current_round.stage.is_terminal():
+                                # If the stage is terminal we notify both players and we always start a new round even if ssome player has a negative bank
+                                # However we always check players banks in the beginning of each round
+                                for player in self.get_players():
+                                    player.send_message(KuhnCoordinatorMessage(
+                                        KuhnCoordinatorEventTypes.RoundResult, 
+                                        evaluation = self.convert_evaluation(current_round.stage.evaluation(), player.player_token), 
+                                        inf_set    = current_round.stage.inf_set()
+                                    ))
+                                self.evaluate_round()
+                                current_round = self.create_new_round()
+                            else:
+                                # If the stage is not terminal we swap current's player id and wait for a new action of second player
+                                current_round.player_token_turn = self.get_player_opponent(current_round.player_token_turn).player_token
+                                self.get_player(current_round.player_token_turn).send_message(KuhnCoordinatorMessage(
+                                    KuhnCoordinatorEventTypes.NextAction,
+                                    inf_set = current_round.stage.public_inf_set(), 
+                                    actions = current_round.stage.actions()
+                                ))
+                        # In case if player made an invalid action we force finish the game
+                        elif message.player_token == current_round.player_token_turn and not message.action in current_round.stage.actions():
+                            if not self.is_finished():
+                                # We first notify both players that invalid action has been made
+                                self.get_player(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.InvalidAction, actions = [ CoordinatorActions.Wait ]))
+                                self.get_player_opponent(message.player_token).send_message(KuhnCoordinatorMessage(KuhnCoordinatorEventTypes.OpponentInvalidAction, actions = [ CoordinatorActions.Wait ]))
+                                # We force finish we game, the player who made an invalid actions loses the entire game
+                                self.force_winner(self.get_player_opponent(message.player_token).player_token)
+                                self.finish()
+                                # Notify player about the result of the game
+                                for player in self.get_players():
+                                    player.send_message(KuhnCoordinatorMessage(
+                                        KuhnCoordinatorEventTypes.GameResult, 
+                                        game_result = self.player_outcome(player.player_token)
+                                    ))
+                        else:
+                            self.logger.warning(f'Unexpected message from player = { message.player_token }: [ action = {message.action} ]')
+                            continue
 
-                except queue.Empty:
-                    if self.is_finished():
-                        break
-                    raise Exception(f'There was no message from player for more than { KuhnGame.MessagesTimeout } sec.')
+                    except queue.Empty:
+                        if self.is_finished():
+                            break
+                        raise Exception(f'There was no message from player for more than { KuhnGame.MessagesTimeout } sec.')
 
         except Exception as e:
             traceback.print_exc()
