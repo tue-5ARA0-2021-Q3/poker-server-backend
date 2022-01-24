@@ -20,10 +20,10 @@ migrate.sh
 
 You can now start a local server instance:
 ```
-python manage.py grpcrunserver --dev --settings=configurations.dev.settings
+python manage.py runserver --settings=configurations.dev.settings
 ```
 
-Server by default will create 2 test player's tokens and will print it at startup. 
+Server by default will create several test player's tokens and will print it at startup. 
 Here is an output example of 2 test players with `da1ff3c4-69c7-44a9-a217-8ec6c746d875` and 
 `8b06fe61-e581-4ef7-b382-6916345052f6` tokens.
 
@@ -38,7 +38,7 @@ Once the local server has been started you can use client application to play ga
 
 ```
 # Example for client application
-python main.py --token 'da1ff3c4-69c7-44a9-a217-8ec6c746d875'
+python main.py --token 'da1ff3c4-69c7-44a9-a217-8ec6c746d875' --play 'bot'
 ```
 
 # Public Docker image (Advanced)
