@@ -1,19 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div id="home">        
+    <div id="home">  
         <div class="ui large header">Welcome to the Kuhn Poker server</div>
+        
+        {% if announcements|length != 0 %}      
+        
+        {% for announcement in announcements %}
+         <div class="ui message">
+            <div class="header">
+              {{ announcement.title }}
+            </div>
+            <p>{{ announcement.message }}</p>
+          </div>
+        {% endfor %}
+        
+        {% endif %}
         <p>
-            In order to play a game you need to have a poker game client. 
-            Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.
-            Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.
-            Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.Lorem ipsum.
+            Welcome to the Kuhn Poker server. As a student of the ARA50 course of the Eindhoven University of Technology 
+            you may use this server to play and test your Kuhn poker agent implementation.
         </p>
-        <div class="ui raised segment">
-            python main.py --token "token UUID here>"
-        </div>
+        <h3 class="ui header">Browse games</h3>
         <p>
-            Once a second player is connected, the game will start automatically.
+            On the <a href="/games" rel="noopener">Browse games</a> tab you can search and examine last games playthrough. 
+        </p>
+
+        <h3 class="ui header">Browse tournaments</h3>
+        <p>
+            On the <a href="/tournaments" rel="noopener">Browse tournaments</a> tab you can search and examine last tournaments playthrough and results.
+        </p>
+
+        <h3 class="ui header">Leaderboard</h3>
+        <p>
+            On the <a href="/leaderboard" rel="noopener">Leaderboard</a> tab you can check other player's games and statistics.
+        </p>
+
+        <p>
+            <h4 class="ui header">Useful links</h4>
+            <div class="ui bulleted list">
+                <a class="item" href="{{ client_github_url }}" rel=noopener>Implement your own agent</a>
+                <a class="item" href="{{ backend_github_url }}" rel=noopener>Backend server documentation</a>
+            </div>
         </p>
     </div>
 {% endblock content %}

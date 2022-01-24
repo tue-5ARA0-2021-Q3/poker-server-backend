@@ -1,17 +1,23 @@
 import datetime
 from urllib import request
 from django.shortcuts import render
-from coordinator.models import Game, GameCoordinator, GameRound, Player, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame
+from coordinator.models import Game, GameCoordinator, GameCoordinatorTypes, GameRound, Player, RoomRegistration, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
+from django.conf import settings
 
 from pages.forms import SearchGameForm, SearchTournamentForm
+from pages.models import Announcement
 
 # Create your views here.
 
 def home_view(request, *args, **kwargs):
-    return render(request, "home.html", {})
+    return render(request, "home.html", {
+        'announcements': list(Announcement.objects.filter(is_hidden = False)),
+        'backend_github_url': settings.BACKEND_GITHUB_URL,
+        'client_github_url': settings.CLIENT_GITHUB_URL
+    })
 
 def games_view(request, *args, **kwargs):
     return render(request, "games.html", {
@@ -21,7 +27,7 @@ def games_view(request, *args, **kwargs):
 
 def tournaments_view(request, *args, **kwargs):
     return render(request, "tournaments.html", {
-        'tournaments': Tournament.objects.all().order_by('-created_at')[:50],
+        'tournaments': Tournament.objects.filter(coordinator__isnull = False).order_by('-created_at')[:50],
         'form': kwargs['form'] if 'form' in kwargs else SearchTournamentForm()
     })
 
@@ -75,21 +81,27 @@ def game_view(request, *args, **kwargs):
 def leaderboard_view(request, *args, **kwargs):
     leaderboard = []
     for player in Player.objects.all():
-        games      = Game.objects.filter(Q(player1__token = player.token) | Q(player2__token = player.token))
-        games_won  = len(list(filter(lambda game: game.winner == player, games)))
+        games           = Game.objects.filter(Q(player1__token = player.token) | Q(player2__token = player.token))
+        games_won       = len(list(filter(lambda game: game.winner == player, games)))
+        
+        registrations            = list(RoomRegistration.objects.filter(player__token = player.token))
+        tournaments_participated = len(list(filter(lambda reg: reg.room.coordinator.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS or reg.room.coordinator.coordinator_type == GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS, registrations))) # hello oneliners in python
+
+        tournaments_won = Tournament.objects.filter(place1__token = player.token).count()
         games_lost = len(games) - games_won
         leaderboard.append({
             'name': player.name,
             'games_total': len(games),
             'games_won': games_won,
-            'games_lost': games_lost
+            'games_lost': games_lost,
+            'tournaments_participated': tournaments_participated,
+            'tournaments_won': tournaments_won
         })
-        leaderboard = sorted(leaderboard, key = lambda d: -d['games_total'])
+        leaderboard = sorted(leaderboard, key = lambda d: -d['tournaments_won'])
     return render(request, "leaderboard.html", {
         'leaderboard': leaderboard
     })
 
-# TODO tournament search view
 def tournament_view(request, *args, **kwargs):
     id = kwargs['tournament_id']
 
@@ -124,4 +136,5 @@ def tournament_view(request, *args, **kwargs):
             'rounds': rounds_data,
         })
     except Exception as e:
+        print(e)
         return render(request, "tournament.html", { 'tournament_found': False })

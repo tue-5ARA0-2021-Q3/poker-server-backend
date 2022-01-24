@@ -43,41 +43,41 @@
             </tbody>
         </table>
         
-        <div class="ui feed" style="margin-top: 20px">
+        
             {% for round in rounds %}
+            <div class="ui feed" style="margin-top: 20px">
+            <div class="ui horizontal divider">
+                Round {{ round.index }}
+              </div>
             <div class="event">
                 <div class="content">
-                    <div class="date">
-                        Round {{ round.index }}
-                    </div>
-                    <div class="summary">
-                        <a class="user">{{ round.first.name }}</a> gets {{ round.cards.0 }} card and 
-                        <a class="user">{{ round.second.name }}</a> gets {{ round.cards.1 }} card.
+                    <div class="extra text">
+                        <div class="user">{{ round.first.name }}</div> gets <b>{{ round.cards.0 }}</b> card and 
+                        <div class="user">{{ round.second.name }}</div> gets <b>{{ round.cards.1 }}</b> card.
                     </div>
                 </div>
             </div>
-            {% for action, player in round.actions %}
-                <div class="event">
-                    <div class="content">
-                        <div class="summary">
-                            {{ player.name }} decided to {{ action }}.
-                        </div>
-                    </div>
+            <div class="ui steps">
+                {% for action, player in round.actions %}
+                <div class="step">
+                    <div class="title">{{ action }}</div>
+                    <div class="description">from {{ player.name }}.</div>
                 </div>
-            {% endfor %}
+                {% endfor %}
+              </div>
             <div class="event">
                 <div class="content">
-                    <div class="summary">
-                        <a class="user">{{ round.first.name }}</a> 
+                    <div class="extra text">
+                        <div class="user">{{ round.first.name }}</div> 
                         {% if round.evaluation > 0 %} wins {% else %} loses {% endif %} {{ round.evaluation|abs }} point(s)
-                        and <a class="user">{{ round.second.name }}</a> 
+                        and <div class="user">{{ round.second.name }}</div> 
                         {% if round.evaluation < 0 %} wins {% else %} loses {% endif %} {{ round.evaluation|abs }} point(s).
                     </div>
                 </div>
             </div>
-            <div class="ui divider"></div>
+            </div>    
             {% endfor %}
-        </div>
+        
         {% endif %}
     </div>
 
