@@ -44,7 +44,7 @@ migrate.sh
 You can now start a local server instance:
 
 ```bash
-python manage.py runserver --settings=configurations.dev.settings
+python manage.py runserver --settings=configurations.dev.settings --noreload
 ```
 
 Server by default will create several test player's tokens and will print it at startup. 
@@ -52,7 +52,7 @@ Here is an output example of 2 test players with `da1ff3c4-69c7-44a9-a217-8ec6c7
 `8b06fe61-e581-4ef7-b382-6916345052f6` tokens.
 
 ```bash
-> python manage.py runserver --settings=configurations.dev.settings
+> python manage.py runserver --settings=configurations.dev.settings --noreload
 Performing system checks...
 
 Test player token: 5e527757-0187-4511-a7dd-825fe2014d0a
