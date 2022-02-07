@@ -5,7 +5,6 @@ from backend.settings import *
 
 GRPC_SERVER_ADDRPORT = '[::]:50051'
 GRPC_MAX_WORKERS = 64 # Note that each player reserves one worker, if this setting is low tournament may not be even able to start
-GRPC_DEVELOPMENT_MODE = False
 
 
 GENERATE_TEST_PLAYERS = 4

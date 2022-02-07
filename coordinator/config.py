@@ -3,40 +3,42 @@ import threading
 import time
 from django.apps import AppConfig
 from django.conf import settings
-from django_grpc_framework.management.commands import grpcrunserver
 
 class CoordinatorConfig(AppConfig):
     name = 'coordinator'
 
-    def start_grpc_server(self):
+    def start_grpc_server(self, game_pb2_grpc, servicer):
+        import grpc
+        from concurrent import futures
         from django.conf import settings
-        command = grpcrunserver.Command()
+        from django_grpc_framework.settings import grpc_settings
 
-        # def grpc_on_server_init(self, **kwargs):
-        #     from coordinator.services import GameCoordinatorService
-        #     from proto.game import game_pb2_grpc
-        #     retry = 0
-        #     while command.server is None and retry < 5:
-        #         time.sleep(1)
-        #         retry = retry + 1
-        #     if command.server is None:
-        #         logging.fatal('Could not initialise GRPC server.')
-        #         print('FATAL: Could not initialise GRPC server.')
-        #     else:
-        #         game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(GameCoordinatorService.as_servicer(), command.server)
+        thread_pool  = futures.ThreadPoolExecutor(max_workers = settings.GRPC_MAX_WORKERS)
+        interceptors = grpc_settings.SERVER_INTERCEPTORS
+        server = grpc.server(thread_pool, interceptors = interceptors)
 
-        # init_thread = threading.Thread(target = grpc_on_server_init)
-        # init_thread.daemon = True
-        # init_thread.start()
+        grpc_settings.ROOT_HANDLERS_HOOK(server)
 
-        # This call is blocking
-        command.handle(address = settings.GRPC_SERVER_ADDRPORT, max_workers = settings.GRPC_MAX_WORKERS, development_mode = settings.GRPC_DEVELOPMENT_MODE)
+        server.add_insecure_port(settings.GRPC_SERVER_ADDRPORT)
 
-    
+        game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(servicer, server)
+
+        print(f'Starting GRPC server at { settings.GRPC_SERVER_ADDRPORT }.')
+
+        server.start()
+        server.wait_for_termination()
 
     def ready(self):
+        
+        from coordinator.services import GameCoordinatorService
+        from proto.game import game_pb2_grpc
 
-        grpc_thread        = threading.Thread(target = self.start_grpc_server)
+        # This line is important
+        import coordinator.signals
+
+        servicer = GameCoordinatorService.as_servicer()
+
+        grpc_thread        = threading.Thread(target = self.start_grpc_server, args = (game_pb2_grpc, servicer))
         grpc_thread.daemon = True
         grpc_thread.start()
 
