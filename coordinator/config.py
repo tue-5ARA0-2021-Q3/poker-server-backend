@@ -3,8 +3,7 @@ import threading
 import time
 from django.apps import AppConfig
 from django.conf import settings
-from grpc_framework.management.commands import grpcrunserver
-from grpc_framework.signals import grpc_server_init, grpc_server_started, grpc_server_shutdown
+from django_grpc_framework.management.commands import grpcrunserver
 
 class CoordinatorConfig(AppConfig):
     name = 'coordinator'
@@ -12,15 +11,30 @@ class CoordinatorConfig(AppConfig):
     def start_grpc_server(self):
         from django.conf import settings
         command = grpcrunserver.Command()
-        command.handle(addrport = settings.GRPC_SERVER_ADDRPORT, max_workers = settings.GRPC_MAX_WORKERS, use_reloader = settings.GRPC_USE_RELOADER)
 
-    def grpc_on_server_init(self, server, **kwargs):
-        from coordinator.services import GameCoordinatorService
-        from proto.game import game_pb2_grpc
-        game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(GameCoordinatorService.as_servicer(), server)
+        # def grpc_on_server_init(self, **kwargs):
+        #     from coordinator.services import GameCoordinatorService
+        #     from proto.game import game_pb2_grpc
+        #     retry = 0
+        #     while command.server is None and retry < 5:
+        #         time.sleep(1)
+        #         retry = retry + 1
+        #     if command.server is None:
+        #         logging.fatal('Could not initialise GRPC server.')
+        #         print('FATAL: Could not initialise GRPC server.')
+        #     else:
+        #         game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(GameCoordinatorService.as_servicer(), command.server)
+
+        # init_thread = threading.Thread(target = grpc_on_server_init)
+        # init_thread.daemon = True
+        # init_thread.start()
+
+        # This call is blocking
+        command.handle(address = settings.GRPC_SERVER_ADDRPORT, max_workers = settings.GRPC_MAX_WORKERS, development_mode = settings.GRPC_DEVELOPMENT_MODE)
+
+    
 
     def ready(self):
-        grpc_server_init.connect(self.grpc_on_server_init)
 
         grpc_thread        = threading.Thread(target = self.start_grpc_server)
         grpc_thread.daemon = True

@@ -4,10 +4,7 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /code
 
-COPY requirements-linux.txt /code/
-
-RUN pip install -r requirements-linux.txt
-
 COPY . /code/
 
+RUN pip install --only-binary grpcio,grpcio-tools,matplotlib,protobuf -r requirements-linux.txt
 RUN bash generate-proto.sh

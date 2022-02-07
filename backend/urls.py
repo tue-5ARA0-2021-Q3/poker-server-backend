@@ -21,6 +21,9 @@ from django.urls import path
 from pages.views import game_search_view, home_view, games_view, game_view, leaderboard_view, tournament_search_view, tournament_view, tournaments_view
 from pages.api import game_counter
 
+from coordinator.services import GameCoordinatorService
+from proto.game import game_pb2_grpc
+
 urlpatterns = [
     path('', lambda req: redirect('/home/')),
     path('home/', home_view, name = 'home'),
@@ -35,3 +38,6 @@ urlpatterns = [
     path('logs/', include('log_viewer.urls')),
     path('api/game_counter', game_counter),
 ]
+
+def grpc_handlers(server):
+    game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(GameCoordinatorService.as_servicer(), server)

@@ -1,0 +1,6 @@
+venv
+.venv
+__pycache__
+server.log
+db.sqlite3
+**/__pycache__
