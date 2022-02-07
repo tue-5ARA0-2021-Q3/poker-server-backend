@@ -27,15 +27,6 @@ services:
       - .:/code
     ports:
       - "8000:8000"
-    depends_on:
-      - migration
-      - db
-  grpc:
-    image: bvdmitri/poker-server-backend
-    command: python manage.py grpcrunserver --settings=configurations.dev.settings
-    volumes:
-      - .:/code
-    ports:
       - "50051:50051"
     depends_on:
       - migration
