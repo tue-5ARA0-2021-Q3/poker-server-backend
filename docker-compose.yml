@@ -22,7 +22,7 @@ services:
       - db
   django:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000 --settings=configurations.dev.settings
+    command: python manage.py runserver 0.0.0.0:8000 --settings=configurations.dev.settings --noreload
     volumes:
       - .:/code
     ports:
