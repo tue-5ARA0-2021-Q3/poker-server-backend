@@ -1,5 +1,6 @@
 venv
 .venv
+bots
 __pycache__
 server.log
 db.sqlite3

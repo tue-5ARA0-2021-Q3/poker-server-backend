@@ -15,6 +15,8 @@ def on_tournament_create(sender, instance, created, raw, using, update_fields, *
     # Once tournament has been created we initiate GRPC request to add a new coordinator for it automatically
     # We create a separate function for that and run it in a separate thread with a slight delay because database it locked at the moment
     def __on_tournament_create():
+        # Slight delay for database to be updated
+        time.sleep(2)
         response = None
         if created: 
             with grpc.insecure_channel(settings.GRPC_SERVER_ADDRPORT) as channel:
