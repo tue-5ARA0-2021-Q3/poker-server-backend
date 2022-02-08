@@ -5,7 +5,7 @@ from backend.settings import *
 
 GRPC_SERVER_ADDRPORT = '[::]:50051'
 GRPC_MAX_WORKERS = 64 # Note that each player reserves one worker, if this setting is low tournament may not be even able to start
-
+GRPC_USE_RELOADER = True
 
 GENERATE_TEST_PLAYERS = 4
 GENERATE_BOT_PLAYERS = 16
@@ -35,6 +35,8 @@ COORDINATOR_CONNECTION_TIMEOUT = 100  # 100 sec
 
 # This is a secret password to create tournaments, change on the production server
 COORDINATOR_TOURNAMENTS_SECRET = 'qwerty'
+
+COORDINATOR_REMOVE_CLOSED_COORDINATORS_INTERVAL = 10 # 10 sec
 
 KUHN_GAME_INITIAL_BANK = 5
 KUHN_ALLOW_BOTS = True

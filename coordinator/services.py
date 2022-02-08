@@ -22,6 +22,16 @@ class GameCoordinatorService(Service):
     lock         = threading.RLock()
     logger       = logging.getLogger('service.coordinator')
 
+    # Run remove_closed_coordinator continuosly in a timer loop
+    def __remove_closed_coordinator_daemon():
+        while True:
+            time.sleep(settings.COORDINATOR_REMOVE_CLOSED_COORDINATORS_INTERVAL)
+            GameCoordinatorService.remove_closed_coordinators()
+
+    _rcc_daemon = threading.Thread(target = __remove_closed_coordinator_daemon)
+    _rcc_daemon.daemon = True
+    _rcc_daemon.start()
+
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Rename(self, request, context):
         player = Player.objects.get(token = request.token)
@@ -58,7 +68,7 @@ class GameCoordinatorService(Service):
 
     # noinspection PyPep8Naming,PyMethodMayBeStatic
     def Play(self, request, context):
-
+        
         # First check method's metadata and extract player's secret token
         metadata  = dict(context.invocation_metadata())
         token     = metadata['token']
@@ -337,6 +347,20 @@ class GameCoordinatorService(Service):
         return coordinator
 
     @staticmethod 
+    def remove_closed_coordinators():
+        with GameCoordinatorService.lock:
+            to_be_removed = []
+            for id, coordinator in GameCoordinatorService.coordinators.items():
+                if coordinator.is_closed():
+                    to_be_removed.append(id)
+            if len(to_be_removed) != 0:
+                GameCoordinatorService.logger.info(f'Removing finished coordinators: { to_be_removed }')
+                for to_remove in to_be_removed:
+                    # It might be removed in parallel
+                    if to_remove in GameCoordinatorService.coordinators:
+                        GameCoordinatorService.coordinators.pop(to_remove)
+
+    @staticmethod 
     def find_coordinator_instance(player: Player, coordinator_id: str, game_type: int) -> KuhnCoordinator:
         with GameCoordinatorService.lock:
             GameCoordinatorService.logger.debug(f'Available coordinator ids: { GameCoordinatorService.coordinators }')
@@ -389,5 +413,13 @@ class GameCoordinatorService(Service):
                 candidates = GameCoordinator.objects.filter(id = coordinator_id, game_type = game_type)
                 if len(candidates) != 0:
                     db_coordinator = candidates[0]
-                    return GameCoordinatorService.coordinators[ str(db_coordinator.id) ]
+                    if (db_coordinator.is_finished) or (db_coordinator.is_failed):
+                        raise Exception(f'Coordinator instance with UUID { coordinator_id } has been finished.')
+                    elif db_coordinator.is_started:
+                        raise Exception(f'Coordinator instance with UUID { coordinator_id } has been started and does not allow new connections.')
+                    strid = str(db_coordinator.id)
+                    if strid in GameCoordinatorService.coordinators:
+                        return GameCoordinatorService.coordinators[ strid ]
+                    else:
+                        raise Exception(f'Coordinator instance with UUID { coordinator_id } exists in database, but has not corresponding game instance controller.')
                 raise Exception(f'Coordinator instance with UUID { coordinator_id } has not been found or it has a different game type.') 
