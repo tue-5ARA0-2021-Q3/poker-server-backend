@@ -1,44 +1,33 @@
 import logging
 import threading
 import time
-from django.apps import AppConfig
+import grpc
+from concurrent import futures
 from django.conf import settings
+from django_grpc_framework.settings import grpc_settings
+from django.apps import AppConfig
 
 class CoordinatorConfig(AppConfig):
     name = 'coordinator'
 
-    def start_grpc_server(self, game_pb2_grpc, servicer):
-        import grpc
-        from concurrent import futures
-        from django.conf import settings
-        from django_grpc_framework.settings import grpc_settings
-
-        thread_pool  = futures.ThreadPoolExecutor(max_workers = settings.GRPC_MAX_WORKERS)
-        interceptors = grpc_settings.SERVER_INTERCEPTORS
-        server = grpc.server(thread_pool, interceptors = interceptors)
-
-        grpc_settings.ROOT_HANDLERS_HOOK(server)
-
-        server.add_insecure_port(settings.GRPC_SERVER_ADDRPORT)
-
-        game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(servicer, server)
-
-        print(f'Starting GRPC server at { settings.GRPC_SERVER_ADDRPORT }.')
-
-        server.start()
-        server.wait_for_termination()
+    def start_grpc_server(self):
+        try: 
+            print(f'Starting GRPC server at { settings.GRPC_SERVER_ADDRPORT }.')
+            server = grpc.server(futures.ThreadPoolExecutor(max_workers = settings.GRPC_MAX_WORKERS), interceptors = grpc_settings.SERVER_INTERCEPTORS)
+            grpc_settings.ROOT_HANDLERS_HOOK(server)
+            server.add_insecure_port(settings.GRPC_SERVER_ADDRPORT)
+            server.start()
+            server.wait_for_termination()
+        except Exception as e:
+            print(f'Error occurred during gRPC server instantiation: { e }')
 
     def ready(self):
-        
-        from coordinator.services import GameCoordinatorService
-        from proto.game import game_pb2_grpc
 
-        # This line is important
+        # This line is important to initialise application's signals 
         import coordinator.signals
 
-        servicer = GameCoordinatorService.as_servicer()
-
-        grpc_thread        = threading.Thread(target = self.start_grpc_server, args = (game_pb2_grpc, servicer))
+        # We run gRPC server in background as `daemon` process that should close automatically as soon as server stops
+        grpc_thread        = threading.Thread(target = self.start_grpc_server)
         grpc_thread.daemon = True
         grpc_thread.start()
 

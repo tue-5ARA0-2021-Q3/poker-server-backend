@@ -36,6 +36,8 @@ urlpatterns = [
     path('api/game_counter', game_counter),
 ]
 
+from coordinator.services import GameCoordinatorService
+from proto.game import game_pb2_grpc
+
 def grpc_handlers(server):
-    # We initialise it later on in coordinator/config.py
-    pass
+    game_pb2_grpc.add_GameCoordinatorControllerServicer_to_server(GameCoordinatorService.as_servicer(), server)

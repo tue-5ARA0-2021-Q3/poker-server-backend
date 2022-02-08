@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"2\n\x13PlayerRenameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"(\n\x14PlayerRenameResponse\x12\x10\n\x08response\x18\x01 \x01(\t\"5\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x11\n\tgame_type\x18\x02 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"\xf8\x03\n\x10PlayGameResponse\x12;\n\x05\x65vent\x18\x01 \x01(\x0e\x32,.game.PlayGameResponse.PlayGameResponseEvent\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t\x12\x12\n\nturn_order\x18\x04 \x01(\x05\x12\x11\n\tcard_rank\x18\x05 \x01(\t\x12\x12\n\ncard_image\x18\x06 \x01(\x0c\x12\x0f\n\x07inf_set\x18\x07 \x01(\t\x12\x18\n\x10round_evaluation\x18\x08 \x01(\x05\x12\x13\n\x0bgame_result\x18\t \x01(\t\x12\x16\n\x0e\x63oordinator_id\x18\n \x01(\t\x12\r\n\x05\x65rror\x18\x0b \x01(\t\"\xe9\x01\n\x15PlayGameResponseEvent\x12\x0b\n\x07Nothing\x10\x00\x12\x0c\n\x08\x43\x61rdDeal\x10\x01\x12\x0e\n\nNextAction\x10\x02\x12\r\n\tGameStart\x10\x03\x12\x0f\n\x0bRoundResult\x10\x04\x12\x0e\n\nGameResult\x10\x05\x12\t\n\x05\x43lose\x10\x06\x12\x17\n\x13UpdateCoordinatorId\x10\x07\x12\x11\n\rInvalidAction\x10\x08\x12\x19\n\x15OpponentInvalidAction\x10\t\x12\x18\n\x14OpponentDisconnected\x10\n\x12\t\n\x05\x45rror\x10\x0b\x32\xda\x01\n\x19GameCoordinatorController\x12\x41\n\x06Rename\x12\x19.game.PlayerRenameRequest\x1a\x1a.game.PlayerRenameResponse\"\x00\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x62\x06proto3'
+  serialized_pb=b'\n\x15proto/game/game.proto\x12\x04game\"2\n\x13PlayerRenameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"(\n\x14PlayerRenameResponse\x12\x10\n\x08response\x18\x01 \x01(\t\"5\n\x11\x43reateGameRequest\x12\r\n\x05token\x18\x01 \x01(\t\x12\x11\n\tgame_type\x18\x02 \x01(\t\" \n\x12\x43reateGameResponse\x12\n\n\x02id\x18\x01 \x01(\t\"!\n\x0fPlayGameRequest\x12\x0e\n\x06\x61\x63tion\x18\x01 \x01(\t\"\xf8\x03\n\x10PlayGameResponse\x12;\n\x05\x65vent\x18\x01 \x01(\x0e\x32,.game.PlayGameResponse.PlayGameResponseEvent\x12\x19\n\x11\x61vailable_actions\x18\x02 \x03(\t\x12\x12\n\nturn_order\x18\x04 \x01(\x05\x12\x11\n\tcard_rank\x18\x05 \x01(\t\x12\x12\n\ncard_image\x18\x06 \x01(\x0c\x12\x0f\n\x07inf_set\x18\x07 \x01(\t\x12\x18\n\x10round_evaluation\x18\x08 \x01(\x05\x12\x13\n\x0bgame_result\x18\t \x01(\t\x12\x16\n\x0e\x63oordinator_id\x18\n \x01(\t\x12\r\n\x05\x65rror\x18\x0b \x01(\t\"\xe9\x01\n\x15PlayGameResponseEvent\x12\x0b\n\x07Nothing\x10\x00\x12\x0c\n\x08\x43\x61rdDeal\x10\x01\x12\x0e\n\nNextAction\x10\x02\x12\r\n\tGameStart\x10\x03\x12\x0f\n\x0bRoundResult\x10\x04\x12\x0e\n\nGameResult\x10\x05\x12\t\n\x05\x43lose\x10\x06\x12\x17\n\x13UpdateCoordinatorId\x10\x07\x12\x11\n\rInvalidAction\x10\x08\x12\x19\n\x15OpponentInvalidAction\x10\t\x12\x18\n\x14OpponentDisconnected\x10\n\x12\t\n\x05\x45rror\x10\x0b\"\xfb\x01\n\x11TournamentRequest\x12\x0e\n\x06secret\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\t\x12\x43\n\x0crequest_type\x18\x03 \x01(\x0e\x32-.game.TournamentRequest.TournamentRequestType\x12\x11\n\tgame_type\x18\x04 \x01(\x05\x12\x10\n\x08\x63\x61pacity\x18\x05 \x01(\x05\x12\x0f\n\x07timeout\x18\x06 \x01(\x05\x12\x12\n\nallow_bots\x18\x07 \x01(\x08\";\n\x15TournamentRequestType\x12\x0b\n\x07Nothing\x10\x00\x12\n\n\x06\x43reate\x10\x01\x12\t\n\x05Start\x10\x02\"/\n\x12TournamentResponse\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t2\x9d\x02\n\x19GameCoordinatorController\x12\x41\n\x06Rename\x12\x19.game.PlayerRenameRequest\x1a\x1a.game.PlayerRenameResponse\"\x00\x12=\n\x06\x43reate\x12\x17.game.CreateGameRequest\x1a\x18.game.CreateGameResponse\"\x00\x12;\n\x04Play\x12\x15.game.PlayGameRequest\x1a\x16.game.PlayGameResponse\"\x00(\x01\x30\x01\x12\x41\n\nTournament\x12\x17.game.TournamentRequest\x1a\x18.game.TournamentResponse\"\x00\x62\x06proto3'
 )
 
 
@@ -98,6 +98,36 @@ _PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT = _descriptor.EnumDescriptor(
   serialized_end=754,
 )
 _sym_db.RegisterEnumDescriptor(_PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT)
+
+_TOURNAMENTREQUEST_TOURNAMENTREQUESTTYPE = _descriptor.EnumDescriptor(
+  name='TournamentRequestType',
+  full_name='game.TournamentRequest.TournamentRequestType',
+  filename=None,
+  file=DESCRIPTOR,
+  create_key=_descriptor._internal_create_key,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='Nothing', index=0, number=0,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='Create', index=1, number=1,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+    _descriptor.EnumValueDescriptor(
+      name='Start', index=2, number=2,
+      serialized_options=None,
+      type=None,
+      create_key=_descriptor._internal_create_key),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=949,
+  serialized_end=1008,
+)
+_sym_db.RegisterEnumDescriptor(_TOURNAMENTREQUEST_TOURNAMENTREQUESTTYPE)
 
 
 _PLAYERRENAMEREQUEST = _descriptor.Descriptor(
@@ -369,14 +399,132 @@ _PLAYGAMERESPONSE = _descriptor.Descriptor(
   serialized_end=754,
 )
 
+
+_TOURNAMENTREQUEST = _descriptor.Descriptor(
+  name='TournamentRequest',
+  full_name='game.TournamentRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='secret', full_name='game.TournamentRequest.secret', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='id', full_name='game.TournamentRequest.id', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='request_type', full_name='game.TournamentRequest.request_type', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='game_type', full_name='game.TournamentRequest.game_type', index=3,
+      number=4, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='capacity', full_name='game.TournamentRequest.capacity', index=4,
+      number=5, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='timeout', full_name='game.TournamentRequest.timeout', index=5,
+      number=6, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='allow_bots', full_name='game.TournamentRequest.allow_bots', index=6,
+      number=7, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _TOURNAMENTREQUEST_TOURNAMENTREQUESTTYPE,
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=757,
+  serialized_end=1008,
+)
+
+
+_TOURNAMENTRESPONSE = _descriptor.Descriptor(
+  name='TournamentResponse',
+  full_name='game.TournamentResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='id', full_name='game.TournamentResponse.id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='error', full_name='game.TournamentResponse.error', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1010,
+  serialized_end=1057,
+)
+
 _PLAYGAMERESPONSE.fields_by_name['event'].enum_type = _PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT
 _PLAYGAMERESPONSE_PLAYGAMERESPONSEEVENT.containing_type = _PLAYGAMERESPONSE
+_TOURNAMENTREQUEST.fields_by_name['request_type'].enum_type = _TOURNAMENTREQUEST_TOURNAMENTREQUESTTYPE
+_TOURNAMENTREQUEST_TOURNAMENTREQUESTTYPE.containing_type = _TOURNAMENTREQUEST
 DESCRIPTOR.message_types_by_name['PlayerRenameRequest'] = _PLAYERRENAMEREQUEST
 DESCRIPTOR.message_types_by_name['PlayerRenameResponse'] = _PLAYERRENAMERESPONSE
 DESCRIPTOR.message_types_by_name['CreateGameRequest'] = _CREATEGAMEREQUEST
 DESCRIPTOR.message_types_by_name['CreateGameResponse'] = _CREATEGAMERESPONSE
 DESCRIPTOR.message_types_by_name['PlayGameRequest'] = _PLAYGAMEREQUEST
 DESCRIPTOR.message_types_by_name['PlayGameResponse'] = _PLAYGAMERESPONSE
+DESCRIPTOR.message_types_by_name['TournamentRequest'] = _TOURNAMENTREQUEST
+DESCRIPTOR.message_types_by_name['TournamentResponse'] = _TOURNAMENTRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 PlayerRenameRequest = _reflection.GeneratedProtocolMessageType('PlayerRenameRequest', (_message.Message,), {
@@ -421,6 +569,20 @@ PlayGameResponse = _reflection.GeneratedProtocolMessageType('PlayGameResponse', 
   })
 _sym_db.RegisterMessage(PlayGameResponse)
 
+TournamentRequest = _reflection.GeneratedProtocolMessageType('TournamentRequest', (_message.Message,), {
+  'DESCRIPTOR' : _TOURNAMENTREQUEST,
+  '__module__' : 'proto.game.game_pb2'
+  # @@protoc_insertion_point(class_scope:game.TournamentRequest)
+  })
+_sym_db.RegisterMessage(TournamentRequest)
+
+TournamentResponse = _reflection.GeneratedProtocolMessageType('TournamentResponse', (_message.Message,), {
+  'DESCRIPTOR' : _TOURNAMENTRESPONSE,
+  '__module__' : 'proto.game.game_pb2'
+  # @@protoc_insertion_point(class_scope:game.TournamentResponse)
+  })
+_sym_db.RegisterMessage(TournamentResponse)
+
 
 
 _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
@@ -430,8 +592,8 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=757,
-  serialized_end=975,
+  serialized_start=1060,
+  serialized_end=1345,
   methods=[
   _descriptor.MethodDescriptor(
     name='Rename',
@@ -460,6 +622,16 @@ _GAMECOORDINATORCONTROLLER = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_PLAYGAMEREQUEST,
     output_type=_PLAYGAMERESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Tournament',
+    full_name='game.GameCoordinatorController.Tournament',
+    index=3,
+    containing_service=None,
+    input_type=_TOURNAMENTREQUEST,
+    output_type=_TOURNAMENTRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

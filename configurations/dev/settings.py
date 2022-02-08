@@ -33,6 +33,9 @@ COORDINATOR_WAITING_TIMEOUT = 5  # 5 sec
 # This option configures timeout for a waiting room connection
 COORDINATOR_CONNECTION_TIMEOUT = 100  # 100 sec
 
+# This is a secret password to create tournaments, change on the production server
+COORDINATOR_TOURNAMENTS_SECRET = 'qwerty'
+
 KUHN_GAME_INITIAL_BANK = 5
 KUHN_ALLOW_BOTS = True
 KUHN_BOT_FOLDER = './bots'

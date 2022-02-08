@@ -271,6 +271,52 @@ class GameCoordinatorService(Service):
 
         callback_active = False
     
+    def Tournament(self, request, context):
+        try:
+            # We allow tournament creation/update from admins who own secret key or from the server itself
+            if request.secret != settings.COORDINATOR_TOURNAMENTS_SECRET:
+                raise Exception('Unauthorized request.')
+
+            if request.request_type == game_pb2.TournamentRequest.TournamentRequestType.Create:
+                GameCoordinatorService.logger.debug(f'Creating coordinator instance for Tournament { request.id }')
+
+                coordinator = GameCoordinatorService.add_coordinator(KuhnCoordinator(
+                    coordinator_type = GameCoordinatorTypes.TOURNAMENT_PLAYERS_WITH_BOTS if request.allow_bots else GameCoordinatorTypes.TOURNAMENT_PLAYERS,
+                    game_type        = request.game_type,
+                    capacity         = request.capacity,
+                    timeout          = request.timeout + 10,
+                    is_private       = False
+                ))
+
+                Tournament.objects.filter(id = request.id).update(coordinator_id = coordinator.id)
+
+                def __start_tournament():
+                    tournament = Tournament.objects.get(id = request.id)
+                    if not tournament.is_started:
+                        GameCoordinatorService.logger.info(f'Starting tournament { request.id } automatically.')
+                        tournament.is_started = True
+                        tournament.save(update_fields = [ 'is_started' ]) 
+
+                rmcoordinator = threading.Timer(request.timeout, __start_tournament)
+                rmcoordinator.start()
+            elif request.request_type == game_pb2.TournamentRequest.TournamentRequestType.Start:
+                instance = Tournament.objects.get(id = request.id)
+                # Check if tournament has been update with `is_started` = True
+                if instance.is_started == True:
+                    with GameCoordinatorService.lock:
+                        if instance.coordinator != None and str(instance.coordinator.id) in GameCoordinatorService.coordinators:
+                            coordinator = GameCoordinatorService.coordinators[ str(instance.coordinator.id) ]
+                            if not coordinator.is_ready():
+                                coordinator.waiting_room.mark_as_ready()
+                                GameCoordinatorService.logger.info(f'Tournament { instance.id } has been started.')
+            else:
+                GameCoordinatorService.logger.warning(f'Unexpected request type in `Tournament` gRPC call: { request }')
+            
+            return game_pb2.TournamentResponse(id = request.id)
+        except Exception as e:
+            GameCoordinatorService.logger.error(f'Unexpected error in `Tournament` gRPC call: { e }')
+            return game_pb2.TournamentResponse(error = f'Unexpected error: { e }')
+
     @staticmethod
     def add_coordinator(coordinator: KuhnCoordinator) -> KuhnCoordinator:
         with GameCoordinatorService.lock:
@@ -344,4 +390,4 @@ class GameCoordinatorService(Service):
                 if len(candidates) != 0:
                     db_coordinator = candidates[0]
                     return GameCoordinatorService.coordinators[ str(db_coordinator.id) ]
-                raise Exception(f'Coordinator instance with UUID { coordinator_id } has not been found') 
+                raise Exception(f'Coordinator instance with UUID { coordinator_id } has not been found or it has a different game type.') 

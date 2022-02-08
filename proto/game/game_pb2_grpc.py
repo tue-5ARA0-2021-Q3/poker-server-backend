@@ -29,6 +29,11 @@ class GameCoordinatorControllerStub(object):
                 request_serializer=proto_dot_game_dot_game__pb2.PlayGameRequest.SerializeToString,
                 response_deserializer=proto_dot_game_dot_game__pb2.PlayGameResponse.FromString,
                 )
+        self.Tournament = channel.unary_unary(
+                '/game.GameCoordinatorController/Tournament',
+                request_serializer=proto_dot_game_dot_game__pb2.TournamentRequest.SerializeToString,
+                response_deserializer=proto_dot_game_dot_game__pb2.TournamentResponse.FromString,
+                )
 
 
 class GameCoordinatorControllerServicer(object):
@@ -52,6 +57,12 @@ class GameCoordinatorControllerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Tournament(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_GameCoordinatorControllerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -69,6 +80,11 @@ def add_GameCoordinatorControllerServicer_to_server(servicer, server):
                     servicer.Play,
                     request_deserializer=proto_dot_game_dot_game__pb2.PlayGameRequest.FromString,
                     response_serializer=proto_dot_game_dot_game__pb2.PlayGameResponse.SerializeToString,
+            ),
+            'Tournament': grpc.unary_unary_rpc_method_handler(
+                    servicer.Tournament,
+                    request_deserializer=proto_dot_game_dot_game__pb2.TournamentRequest.FromString,
+                    response_serializer=proto_dot_game_dot_game__pb2.TournamentResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -128,5 +144,22 @@ class GameCoordinatorController(object):
         return grpc.experimental.stream_stream(request_iterator, target, '/game.GameCoordinatorController/Play',
             proto_dot_game_dot_game__pb2.PlayGameRequest.SerializeToString,
             proto_dot_game_dot_game__pb2.PlayGameResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Tournament(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/game.GameCoordinatorController/Tournament',
+            proto_dot_game_dot_game__pb2.TournamentRequest.SerializeToString,
+            proto_dot_game_dot_game__pb2.TournamentResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
