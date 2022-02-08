@@ -22,7 +22,13 @@ services:
       - db
   django:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000 --settings=configurations.docker.settings --noreload
+    command: 
+      - /bin/bash
+      - -c
+      - |
+        python manage.py ensure_adminuser --settings=configurations.docker.settings --username=docker --email=docker@docker.com --password=docker
+        python manage.py runserver 0.0.0.0:8000 --settings=configurations.docker.settings --noreload
+    restart: on-failure:5
     volumes:
       - .:/code
       - ./bots:/code/bots
@@ -31,4 +37,3 @@ services:
       - "50051:50051"
     depends_on:
       - migration
-      - db
