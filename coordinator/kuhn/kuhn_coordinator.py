@@ -156,7 +156,7 @@ class KuhnCoordinator(object):
                 try: 
                     bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
                     self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
-                    subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, capture_output = True)
+                    subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, shell = True, capture_output = True)
                     self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
                 except Exception as e:
                     self.close(error = str(e))

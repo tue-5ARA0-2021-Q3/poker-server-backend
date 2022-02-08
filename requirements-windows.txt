@@ -1,0 +1,11 @@
+Django==3.1.4
+psycopg2-binary>=2.8
+grpcio==1.43.0
+grpcio-tools==1.43.0
+djangogrpcframework==0.2
+django-mathfilters==1.0.0
+protobuf==3.14.0
+matplotlib==3.5.1
+Pillow==8.1.0
+django-log-viewer==1.1.4
+windows-curses==2.3.0
