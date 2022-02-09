@@ -8,6 +8,7 @@ from django.conf import settings
 from django_grpc_framework.settings import grpc_settings
 from django.apps import AppConfig
 from django.utils.autoreload import get_reloader, ensure_echo_on, check_errors, WatchmanUnavailable, restart_with_reloader
+from django.db.utils import OperationalError
 
 class CoordinatorConfig(AppConfig):
     name = 'coordinator'
@@ -78,6 +79,7 @@ class CoordinatorConfig(AppConfig):
                     for _ in range(to_create):
                         bot_player = Player(name = pick_random_botname(), is_bot = True)
                         bot_player.save()
-
-        except:
-            logging.warning('Exception happened during instantiation of `CoordinatorConfig`')
+        except OperationalError:
+            pass
+        except Exception as e:
+            logging.warning(f'Exception of type { type(e) } happened during instantiation of `CoordinatorConfig`: { e }')

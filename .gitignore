@@ -1,10 +1,10 @@
 .vscode/
 .venv/
 venv/
-bots/
 logs/
 *.log
 coordinator/migrations/
 db.sqlite3
 **/.DS_Store
 **/__pycache__
+

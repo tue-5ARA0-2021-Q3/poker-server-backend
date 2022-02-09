@@ -156,7 +156,9 @@ class KuhnCoordinator(object):
                 try: 
                     bot_exec = str(random.choice(KuhnCoordinator.LobbyBots))
                     self.logger.info(f'Executing { bot_exec } bot for coordinator { self.id }.')
-                    subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, shell = True, capture_output = True)
+                    # Sort of fix for strange issue on windows we found with Bart
+                    is_shell = True if os.name == 'nt' else False # Probably there is a more clever and proper fix for that
+                    subprocess.run([ 'python', bot_exec, '--play', str(self.id), '--token', bot_token, '--cards', KUHN_TYPE_TO_STR[self.game_type] ], check = True, shell = is_shell, capture_output = True)
                     self.logger.info(f'Bot in coordinator { self.id } exited sucessfully.')
                 except Exception as e:
                     self.close(error = str(e))

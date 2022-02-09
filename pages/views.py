@@ -1,16 +1,12 @@
-import datetime
-from urllib import request
+
 from django.shortcuts import render
-from coordinator.models import Game, GameCoordinator, GameCoordinatorTypes, GameRound, Player, RoomRegistration, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame
+from coordinator.models import Game, GameCoordinatorTypes, GameRound, Player, RoomRegistration, Tournament, TournamentRound, TournamentRoundBracketItem, TournamentRoundGame
 from django.db.models import Q
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
 from django.conf import settings
 
 from pages.forms import SearchGameForm, SearchTournamentForm
 from pages.models import Announcement
-
-# Create your views here.
 
 def home_view(request, *args, **kwargs):
     return render(request, "home.html", {
@@ -79,7 +75,8 @@ def game_view(request, *args, **kwargs):
         return render(request, "game.html", { 'is_game_found': False })
 
 def leaderboard_view(request, *args, **kwargs):
-    leaderboard = []
+    players = []
+    bots    = []
     for player in Player.objects.all():
         games           = Game.objects.filter(Q(player1__token = player.token) | Q(player2__token = player.token))
         games_won       = len(list(filter(lambda game: game.winner == player, games)))
@@ -89,18 +86,34 @@ def leaderboard_view(request, *args, **kwargs):
 
         tournaments_won = Tournament.objects.filter(place1__token = player.token).count()
         games_lost = len(games) - games_won
-        leaderboard.append({
+
+        stats = {
             'name': player.name,
             'games_total': len(games),
             'games_won': games_won,
             'games_lost': games_lost,
             'tournaments_participated': tournaments_participated,
             'tournaments_won': tournaments_won
-        })
-        leaderboard = sorted(leaderboard, key = lambda d: -d['tournaments_won'])
-    return render(request, "leaderboard.html", {
-        'leaderboard': leaderboard
-    })
+        }
+        if not player.is_bot:
+            players.append(stats)
+        else:
+            bots.append(stats)
+
+    # Aggregate bot stats into a single one
+    aggr_bots_stats = { 'name': 'Bots (in total)', 'games_total': 0, 'games_won': 0, 'games_lost': 0, 'tournaments_participated': 0, 'tournaments_won': 0 }
+
+    for bot in bots:
+        aggr_bots_stats['games_total']              += bot['games_total']
+        aggr_bots_stats['games_won']                += bot['games_won']
+        aggr_bots_stats['games_lost']               += bot['games_lost']
+        aggr_bots_stats['tournaments_participated'] += bot['tournaments_participated']
+        aggr_bots_stats['tournaments_won']          += bot['tournaments_won']
+
+    leaderboard = [ *players, aggr_bots_stats ]
+    leaderboard = sorted(leaderboard, key = lambda d: -d['tournaments_won'])
+    
+    return render(request, "leaderboard.html", { 'leaderboard': leaderboard })
 
 def tournament_view(request, *args, **kwargs):
     id = kwargs['tournament_id']
@@ -136,5 +149,4 @@ def tournament_view(request, *args, **kwargs):
             'rounds': rounds_data,
         })
     except Exception as e:
-        print(e)
         return render(request, "tournament.html", { 'tournament_found': False })

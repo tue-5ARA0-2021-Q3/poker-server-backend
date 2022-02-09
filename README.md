@@ -63,7 +63,7 @@ Once the local server has been started you can use client application to play ga
 
 ```
 # Example for client application
-python main.py --token 'da1ff3c4-69c7-44a9-a217-8ec6c746d875' --play 'bot'
+python main.py --token "da1ff3c4-69c7-44a9-a217-8ec6c746d875" --play "bot"
 ```
 
 # Bot players
@@ -80,6 +80,4 @@ docker-compose up
 ```
 
 > **_NOTE:_** You may need to run `docker-compose up` twice for the first time to properly generate server database layout.
-
-> **_NOTE:_** Initial Docker image installation and GRPC IO protocol build requires some extra RAM when using it within Docker environment. Make sure that Docker images has enough RAM in the Docker Desktop settings. 
   
