@@ -15,7 +15,9 @@ python -m venv .venv
 ```
 
 
-After you've created you will need to activate the virtual environment:
+After you've created you will need to activate the virtual environment every time you start working on your project or create a new terminal session:
+
+
 ```bash
 # macOS/Linux
 source .venv/bin/activate
@@ -23,6 +25,8 @@ source .venv/bin/activate
 # Windows
 .venv\Scripts\activate.bat
 ```
+
+> **_NOTE:_** On the newer versions of Windows running scripts can be disabled by default. You can use `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process` command to override this setting and to allow running scripts in the current terminal session.
 
 Then install the required packages:
 
@@ -37,13 +41,19 @@ pip install -r requirements-windows.txt
 Then generate the game protocol and setup the database: 
 
 ```bash
+# macOS/Linux
 generate-proto.sh
 migrate.sh
+
+# Windows
+.\generate-proto.sh
+.\migrate.sh
 ```
 
 You can now start a local server instance:
 
 ```bash
+# macOS/Linux, you can use `py -3` for Windows instead of `python`
 python manage.py runserver --settings=configurations.dev.settings
 ```
 
