@@ -7,25 +7,15 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-  migration:
-    build: .
-    command:
-      - /bin/bash
-      - -c
-      - |
-        python manage.py makemigrations --settings=configurations.docker.settings
-        python manage.py makemigrations coordinator --settings=configurations.docker.settings
-        python manage.py migrate --run-syncdb --settings=configurations.docker.settings
-    volumes:
-      - .:/code
-    depends_on:
-      - db
   django:
     build: .
     command: 
       - /bin/bash
       - -c
       - |
+        python manage.py makemigrations --settings=configurations.docker.settings
+        python manage.py makemigrations coordinator --settings=configurations.docker.settings
+        python manage.py migrate --run-syncdb --settings=configurations.docker.settings
         python manage.py ensure_adminuser --settings=configurations.docker.settings --username=docker --email=docker@docker.com --password=docker
         python manage.py runserver 0.0.0.0:8000 --settings=configurations.docker.settings --noreload
     restart: on-failure:5
