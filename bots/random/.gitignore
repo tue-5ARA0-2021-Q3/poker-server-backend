@@ -1,0 +1,13 @@
+.vscode/
+venv/
+.venv/
+db.sqlite3
+.ipynb_checkpoints
+.pytest_cache
+**/.DS_Store
+**/__pycache__
+variables/
+*.pkl
+*.h5
+*.html
+.python-version

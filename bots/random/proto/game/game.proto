@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package game;
+
+service GameCoordinatorController {
+    rpc Rename(PlayerRenameRequest) returns (PlayerRenameResponse) {}
+    rpc Create(CreateGameRequest) returns (CreateGameResponse) {}
+    rpc Play(stream PlayGameRequest) returns (stream PlayGameResponse) {}
+    rpc Tournament(TournamentRequest) returns (TournamentResponse) {}
+}
+
+// ----------------------------------- //
+
+message PlayerRenameRequest {
+    string token = 1;
+    string name = 2;
+}
+
+message PlayerRenameResponse {
+    string response = 1;
+}
+
+// ----------------------------------- //
+
+message CreateGameRequest {
+    string token = 1;
+    string game_type = 2;
+}
+
+message CreateGameResponse {
+    string id = 1;
+}
+
+// ----------------------------------- //
+
+message PlayGameRequest {
+    string action = 1;
+}
+
+message PlayGameResponse {
+    enum PlayGameResponseEvent {
+        Nothing = 0;
+        CardDeal = 1;
+        NextAction = 2;
+        GameStart = 3;
+        RoundResult = 4;
+        GameResult = 5;
+        Close = 6;
+        UpdateCoordinatorId = 7;
+        InvalidAction = 8;
+        OpponentInvalidAction = 9;
+        OpponentDisconnected = 10;
+        Error = 11;
+    }
+    PlayGameResponseEvent event = 1;
+    repeated string available_actions = 2;
+
+    int32 turn_order = 4;
+    string card_rank = 5;
+    bytes card_image = 6;
+
+    string inf_set = 7;
+    int32 round_evaluation = 8;
+    string game_result = 9;
+
+    string coordinator_id = 10;
+    string error = 11;
+}
+
+// ----------------------------------- //
+
+
+message TournamentRequest {
+    enum TournamentRequestType {
+        Nothing = 0;
+        Create = 1;
+        Start = 2;
+    }
+    string secret = 1;
+    string id = 2;
+    TournamentRequestType request_type = 3;
+    int32 game_type = 4;
+    int32 capacity = 5;
+    int32 timeout = 6;
+    bool allow_bots = 7;
+}
+
+message TournamentResponse {
+    string id = 1;
+    string error = 2;
+}
