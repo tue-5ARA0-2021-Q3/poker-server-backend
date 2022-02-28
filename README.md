@@ -23,7 +23,7 @@ After you've created you will need to activate the virtual environment every tim
 source .venv/bin/activate
 
 # Windows
-.venv\Scripts\activate.bat
+.venv\Scripts\activate
 ```
 
 > **_NOTE:_** On the newer versions of Windows running scripts can be disabled by default. You can use `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process` command to override this setting and to allow running scripts in the current terminal session.
