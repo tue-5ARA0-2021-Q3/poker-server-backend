@@ -116,10 +116,8 @@ def leaderboard_view(request, *args, **kwargs):
     return render(request, "leaderboard.html", { 'leaderboard': leaderboard })
 
 def tournament_view(request, *args, **kwargs):
-    id = kwargs['tournament_id']
-
     try: 
-        context = {}
+        id = kwargs['tournament_id']
 
         tournament  = None
         tournaments_by_id  = Tournament.objects.filter(id = id)
@@ -133,11 +131,11 @@ def tournament_view(request, *args, **kwargs):
         if tournament == None:
             raise ValueError()            
 
-        rounds   = sorted(list(TournamentRound.objects.filter(tournament__id = tournament.id)), key = lambda d: d.index)
+        rounds = sorted(list(TournamentRound.objects.filter(tournament__id = tournament.id)), key = lambda d: d.index)
 
         def fetch_rounds_data(round):
             bracket_items = sorted(list(TournamentRoundBracketItem.objects.filter(round__id = round.id)), key = lambda d: d.position)
-            games         = list(map(lambda bracket_item: TournamentRoundGame.objects.get(bracket_item__id = bracket_item.id), bracket_items))
+            games         = list(map(lambda bracket_item: next(iter(list(TournamentRoundGame.objects.filter(bracket_item__id = bracket_item.id))), None), bracket_items))
             brackets      = list(map(lambda tuple: { 'bracket_item': tuple[0], 'game': tuple[1] }, zip(bracket_items, games)))
             return { 'round': round, 'brackets': brackets }
 

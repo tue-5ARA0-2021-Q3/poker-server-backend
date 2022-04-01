@@ -36,21 +36,38 @@
                         <h5 class="ui top attached left aligned clearing header segment">
                             <div class="content">
                                 Game {{ bracket.bracket_item.position }} of Round {{ round.round.index }}
-                                <div class="sub header">
-                                    <a href="/game/{{ bracket.game.game.id }}" rel="noopener">Game logs</a>
-                                </div>
+                                {% if bracket.game != None %}
+                                    <div class="sub header">
+                                        <a href="/game/{{ bracket.game.game.id }}" rel="noopener">Game logs</a>
+                                    </div>
+                                {% else %}
+                                    <div class="sub header">
+                                        <a>TBA</a>
+                                    </div>
+                                {% endif %}
                               </div>
                         </h5>
-                        <div class="ui attached {% if bracket.game.game.winner == bracket.game.game.player1 %} success {% else %} error {% endif %} message">
-                            {% comment %} <i class="chess queen icon"></i> {% endcomment %}
-                            {{ bracket.game.game.player1.name }}
-                        </div>
-                        <div class="ui bottom attached {% if bracket.game.game.winner == bracket.game.game.player2 %} success {% else %} error {% endif %} message">
-                            {% comment %} <i class="chess queen icon"></i> {% endcomment %}
-                            {{ bracket.game.game.player2.name }}
-                        </div>
-                        {% comment %} <a href="/game/{{ bracket.game.game.id }}">Logs</a> {% endcomment %}
-                        </div>
+                        {% if bracket.game != None %}
+                            <div class="ui attached {% if bracket.game.game.winner == bracket.game.game.player1 %} success {% else %} error {% endif %} message">
+                                {% comment %} <i class="chess queen icon"></i> {% endcomment %}
+                                {{ bracket.game.game.player1.name }}
+                            </div>
+                            <div class="ui bottom attached {% if bracket.game.game.winner == bracket.game.game.player2 %} success {% else %} error {% endif %} message">
+                                {% comment %} <i class="chess queen icon"></i> {% endcomment %}
+                                {{ bracket.game.game.player2.name }}
+                            </div>
+                            {% comment %} <a href="/game/{{ bracket.game.game.id }}">Logs</a> {% endcomment %}
+                        {% else %}
+                            <div class="ui attached message">
+                                {% comment %} <i class="chess queen icon"></i> {% endcomment %}
+                                TBA
+                            </div>
+                            <div class="ui attached message">
+                                {% comment %} <i class="chess queen icon"></i> {% endcomment %}
+                                TBA
+                            </div>
+                        {% endif %}
+                    </div>
                     </div>
                 {% endfor %}
                 </div>
